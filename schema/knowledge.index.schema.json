@@ -1,0 +1,159 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AI Knowledge Index",
+  "type": "object",
+  "required": ["version", "generated_at", "documents"],
+  "additionalProperties": false,
+
+  "properties": {
+    "version": {
+      "type": "integer",
+      "description": "Schema version of the knowledge index"
+    },
+
+    "generated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp when the index was generated"
+    },
+
+    "source": {
+      "type": "string",
+      "description": "Path to the knowledge root directory",
+      "default": "knowledge"
+    },
+
+    "documents": {
+      "type": "array",
+      "description": "List of indexed knowledge documents",
+      "items": {
+        "$ref": "#/definitions/document"
+      }
+    }
+  },
+
+  "definitions": {
+    "document": {
+      "type": "object",
+      "required": [
+        "id",
+        "title",
+        "path",
+        "domain",
+        "category",
+        "kind",
+        "status"
+      ],
+      "additionalProperties": false,
+
+      "properties": {
+
+        "id": {
+          "type": "string",
+          "description": "Unique identifier of the knowledge document",
+          "pattern": "^[a-z0-9\\-]+$"
+        },
+
+        "title": {
+          "type": "string",
+          "description": "Human readable title of the document"
+        },
+
+        "path": {
+          "type": "string",
+          "description": "Relative path to the markdown file"
+        },
+
+        "domain": {
+          "type": "string",
+          "description": "Top-level knowledge domain",
+          "enum": [
+            "shared",
+            "frontend",
+            "backend",
+            "devops",
+            "security",
+            "data"
+          ]
+        },
+
+        "category": {
+          "type": "string",
+          "description": "Category inside the domain"
+        },
+
+        "kind": {
+          "type": "string",
+          "description": "Type of knowledge document",
+          "enum": [
+            "rule",
+            "policy",
+            "principle",
+            "architecture",
+            "pattern",
+            "workflow",
+            "skill",
+            "reference"
+          ]
+        },
+
+        "tags": {
+          "type": "array",
+          "description": "Tags used for semantic retrieval",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+
+        "priority": {
+          "type": "integer",
+          "description": "Priority used for ranking during context injection",
+          "minimum": 0,
+          "maximum": 100,
+          "default": 50
+        },
+
+        "status": {
+          "type": "string",
+          "description": "Lifecycle state of the knowledge document",
+          "enum": [
+            "draft",
+            "active",
+            "deprecated"
+          ],
+          "default": "active"
+        },
+
+        "applies_to": {
+          "type": "array",
+          "description": "Agents that this knowledge applies to",
+          "items": {
+            "type": "string"
+          }
+        },
+
+        "depends_on": {
+          "type": "array",
+          "description": "Other knowledge documents required by this one",
+          "items": {
+            "type": "string"
+          }
+        },
+
+        "related": {
+          "type": "array",
+          "description": "Related documents",
+          "items": {
+            "type": "string"
+          }
+        },
+
+        "checksum": {
+          "type": "string",
+          "description": "Content hash used for change detection"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Knowledge Document Schema",
+  "type": "object",
+  "required": ["id", "version", "title", "kind", "domain"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+$"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "title": {
+      "type": "string"
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "rule",
+        "policy",
+        "principle",
+        "architecture",
+        "workflow",
+        "skill",
+        "reference"
+      ]
+    },
+    "domain": {
+      "type": "string"
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "priority": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "applies_to": {
+      "type": "object",
+      "properties": {
+        "agents": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "domains": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "status": {
+      "type": "string",
+      "enum": ["draft", "stable", "deprecated"]
+    }
+  }
+}

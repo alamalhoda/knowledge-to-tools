@@ -1,0 +1,56 @@
+{
+  "version": 2,
+  "name": "architect",
+  "display_name": "Architect Agent",
+  "description": "System architecture authority responsible for cross-domain design decisions and architectural governance.",
+  "role": "System architecture authority responsible for system design decisions, architectural governance, cross-domain consistency, technology strategy, and resolving architectural conflicts.",
+
+  "knowledge": {
+    "domains": ["backend", "frontend", "shared"],
+    "categories": ["architecture", "core", "principles"],
+    "tags": []
+  },
+
+  "authority": {
+    "level": "decision",
+    "can_override": ["backend", "frontend"],
+    "scope": [
+      "backend architecture",
+      "frontend architecture",
+      "system-wide design"
+    ]
+  },
+
+  "contracts": {
+    "inputs_from": [],
+    "outputs_to": ["backend", "frontend"]
+  },
+
+  "behavior": {
+    "planning": "required",
+    "testing": "preferred",
+    "review_style": "balanced",
+    "verbosity": "normal"
+  },
+
+  "permissions": {
+    "file_write": false,
+    "shell": false,
+    "network": false
+  },
+
+  "routing": {
+    "priority": 100,
+    "selection_strategy": "hybrid"
+  },
+
+  "lifecycle": {
+    "status": "active",
+    "versioning": "semantic"
+  },
+
+  "metadata": {
+    "created_at": "2026-06-07T19:00:00Z",
+    "updated_at": "2026-06-07T19:00:00Z"
+  }
+}

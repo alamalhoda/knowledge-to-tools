@@ -1,0 +1,21 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# macOS
+.DS_Store
+
+# Generated IR files (in ir/ root only)
+ir/runtime_ir.json
+ir/ir_data.json
+
+# Generated plans directory
+plans/
+
+# Generated knowledge index
+knowledge/index.json
+
+# Empty placeholder directories (only contain __pycache__)
+/planning/
+/router/

@@ -1,0 +1,60 @@
+{
+  "version": 2,
+  "name": "frontend",
+  "display_name": "Frontend Engineer Agent",
+  "description": "Frontend execution agent responsible for Vue 3 UI, state management, UX, and frontend architecture.",
+  "role": "Responsible for implementing UI and frontend architecture including Vue components, Pinia state management, UX/UI, responsiveness, accessibility, API integration, and performance optimization.",
+
+  "knowledge": {
+    "domains": ["frontend", "shared"],
+    "categories": [
+      "architecture",
+      "patterns",
+      "state",
+      "ui-ux",
+      "performance",
+      "testing",
+      "tools",
+      "core"
+    ],
+    "tags": []
+  },
+
+  "authority": {
+    "level": "advisory",
+    "scope": ["frontend"]
+  },
+
+  "contracts": {
+    "inputs_from": ["architect"],
+    "outputs_to": ["reviewer"]
+  },
+
+  "behavior": {
+    "planning": "preferred",
+    "testing": "preferred",
+    "review_style": "balanced",
+    "verbosity": "normal"
+  },
+
+  "permissions": {
+    "file_write": true,
+    "shell": false,
+    "network": false
+  },
+
+  "routing": {
+    "priority": 80,
+    "selection_strategy": "hybrid"
+  },
+
+  "lifecycle": {
+    "status": "active",
+    "versioning": "semantic"
+  },
+
+  "metadata": {
+    "created_at": "2026-06-07T19:00:00Z",
+    "updated_at": "2026-06-07T19:00:00Z"
+  }
+}

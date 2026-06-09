@@ -1,0 +1,278 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AI Agent Definition Schema (v2)",
+  "type": "object",
+
+  "required": [
+    "version",
+    "name",
+    "role",
+    "knowledge",
+    "authority",
+    "contracts"
+  ],
+
+  "additionalProperties": false,
+
+  "properties": {
+
+    "version": {
+      "type": "integer",
+      "minimum": 2,
+      "description": "Schema version"
+    },
+
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+$"
+    },
+
+    "display_name": {
+      "type": "string"
+    },
+
+    "description": {
+      "type": "string"
+    },
+
+    "role": {
+      "type": "string",
+      "description": "Human-readable role definition of the agent"
+    },
+
+    "extends": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+
+    "knowledge": {
+      "type": "object",
+      "required": ["domains"],
+
+      "properties": {
+
+        "domains": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        },
+
+        "categories": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        },
+
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        },
+
+        "include_shared": {
+          "type": "boolean",
+          "default": true
+        },
+
+        "resolution_strategy": {
+          "type": "string",
+          "enum": ["strict", "hybrid", "adaptive"],
+          "default": "hybrid"
+        }
+      }
+    },
+
+    "behavior": {
+      "type": "object",
+
+      "properties": {
+
+        "planning": {
+          "type": "string",
+          "enum": ["required", "preferred", "none"],
+          "default": "preferred"
+        },
+
+        "testing": {
+          "type": "string",
+          "enum": ["required", "preferred", "none"],
+          "default": "preferred"
+        },
+
+        "review_style": {
+          "type": "string",
+          "enum": ["strict", "balanced", "relaxed"],
+          "default": "balanced"
+        },
+
+        "verbosity": {
+          "type": "string",
+          "enum": ["low", "normal", "high"],
+          "default": "normal"
+        }
+      }
+    },
+
+    "authority": {
+      "type": "object",
+      "required": ["level"],
+
+      "properties": {
+
+        "level": {
+          "type": "string",
+          "enum": ["advisory", "decision", "enforcement"],
+          "description": "Decision power level of the agent"
+        },
+
+        "can_override": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        },
+
+        "scope": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Bounded areas where this authority applies"
+        }
+      }
+    },
+
+    "contracts": {
+      "type": "object",
+      "required": ["inputs_from", "outputs_to"],
+
+      "properties": {
+
+        "inputs_from": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true,
+          "description": "Agents that can send tasks to this agent"
+        },
+
+        "outputs_to": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true,
+          "description": "Agents this agent can delegate to"
+        },
+
+        "data_contract": {
+          "type": "object",
+          "description": "Optional structured I/O contract between agents",
+          "properties": {
+            "input_schema": { "type": "object" },
+            "output_schema": { "type": "object" }
+          }
+        }
+      }
+    },
+
+    "workflows": {
+      "type": "array",
+      "items": { "type": "string" },
+      "uniqueItems": true
+    },
+
+    "permissions": {
+      "type": "object",
+
+      "properties": {
+
+        "file_write": {
+          "type": "boolean",
+          "default": false
+        },
+
+        "shell": {
+          "type": "boolean",
+          "default": false
+        },
+
+        "network": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+
+    "routing": {
+      "type": "object",
+
+      "properties": {
+
+        "priority": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+
+        "fallback_agents": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        },
+
+        "selection_strategy": {
+          "type": "string",
+          "enum": ["rule-based", "knowledge-based", "hybrid"],
+          "default": "hybrid"
+        }
+      }
+    },
+
+    "lifecycle": {
+      "type": "object",
+
+      "properties": {
+
+        "status": {
+          "type": "string",
+          "enum": ["draft", "active", "deprecated"],
+          "default": "active"
+        },
+
+        "versioning": {
+          "type": "string",
+          "enum": ["semantic", "incremental"],
+          "default": "semantic"
+        },
+
+        "deprecation_policy": {
+          "type": "string",
+          "description": "Rules for retiring or replacing this agent"
+        }
+      }
+    },
+
+    "metadata": {
+      "type": "object",
+
+      "properties": {
+
+        "owner": {
+          "type": "string"
+        },
+
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+
+        "checksum": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
