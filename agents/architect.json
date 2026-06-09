@@ -1,54 +1,45 @@
 {
-  "version": 2,
   "name": "architect",
   "display_name": "Architect Agent",
   "description": "System architecture authority responsible for cross-domain design decisions and architectural governance.",
   "role": "System architecture authority responsible for system design decisions, architectural governance, cross-domain consistency, technology strategy, and resolving architectural conflicts.",
-
   "knowledge": {
     "domains": ["backend", "frontend", "shared"],
     "categories": ["architecture", "core", "principles"],
     "tags": []
   },
-
   "authority": {
-    "level": "decision",
-    "can_override": ["backend", "frontend"],
-    "scope": [
-      "backend architecture",
-      "frontend architecture",
-      "system-wide design"
-    ]
+    "level": "senior",
+    "can_delegate": true,
+    "escalation_path": []
   },
-
-  "contracts": {
-    "inputs_from": [],
-    "outputs_to": ["backend", "frontend"]
-  },
-
   "behavior": {
     "planning": "required",
     "testing": "preferred",
     "review_style": "balanced",
-    "verbosity": "normal"
+    "response_format": "normal"
   },
-
   "permissions": {
-    "file_write": false,
     "shell": false,
+    "edit": false,
+    "read": true,
     "network": false
   },
-
   "routing": {
     "priority": 100,
-    "selection_strategy": "hybrid"
+    "match_domains": ["backend", "frontend", "shared"],
+    "match_patterns": ["**/*.py", "**/*.ts", "**/*.tsx", "**/*.vue"]
   },
-
-  "lifecycle": {
-    "status": "active",
-    "versioning": "semantic"
-  },
-
+  "capabilities": ["system-design"],
+  "workflows": ["backend-api-flow", "frontend-feature-flow"],
+  "blueprints": [
+    "backend-architecture-django-architecture",
+    "frontend-architecture-atomic-design",
+    "frontend-architecture-component-design",
+    "frontend-architecture-project-structure",
+    "frontend-architecture-separation-of-concerns"
+  ],
+  "bundles": [],
   "metadata": {
     "created_at": "2026-06-07T19:00:00Z",
     "updated_at": "2026-06-07T19:00:00Z"

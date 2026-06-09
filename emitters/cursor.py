@@ -1,44 +1,41 @@
+from __future__ import annotations
+
 from pathlib import Path
-from datetime import datetime
-from typing import Dict, Any, List
-import json
+from datetime import datetime, timezone
+from typing import Dict, Any, List, Optional
 
 from .base import BaseEmitter
+from ir.models import IRRoot
 
 
-def safe_write(path: Path, content: str) -> None:
+def _now_iso() -> str:
+    return f"{datetime.now(timezone.utc).isoformat()}"
+
+
+def _safe_write(path: Path, content: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(content, encoding="utf-8")
 
 
-def now_iso() -> str:
-    return f"{datetime.utcnow().isoformat()}Z"
-
-
 class CursorEmitter(BaseEmitter):
     """
-    Cursor-specific emitter — translates RuntimeIR to Cursor format.
-    Reads composed agents and generates .cursor/ structure.
+    Cursor-specific emitter — translates IRRoot to Cursor format.
+    Consumes IR only; does not read knowledge directly.
     """
 
-    BASE_DIR = Path(".cursor")
+    def emit(self, ir: IRRoot, output_dir: Optional[Path] = None) -> None:
+        ir_dict = self._ir_to_dict(ir)
+        base = self._resolve_output_dir(output_dir)
+        rules_dir = base / "rules"
+        agents_dir = base / "agents"
+        count_rules = 0
+        count_agents = 0
 
-    def _get_knowledge_list(self) -> List[Dict[str, Any]]:
-        knowledge = self.ir.get("knowledge", {})
+        knowledge = ir_dict.get("knowledge", [])
         if isinstance(knowledge, dict):
-            return list(knowledge.values())
-        return knowledge
+            knowledge = list(knowledge.values())
 
-    def emit(self) -> None:
-        self._emit_rules()
-        self._emit_agents()
-        print("🎉 CursorEmitter: All Cursor artifacts generated successfully!")
-
-    def _emit_rules(self) -> None:
-        rules_dir = self.BASE_DIR / "rules"
-        count = 0
-
-        for doc in self._get_knowledge_list():
+        for doc in knowledge:
             kind = doc.get("kind")
             if kind not in {"rule", "principle", "reference", "policy"}:
                 continue
@@ -47,7 +44,7 @@ class CursorEmitter(BaseEmitter):
             raw = doc.get("content", {}).get("raw", "")[:3000]
 
             content = f"""---
-title: {doc['content'].get('summary', '')}
+title: {doc.get('content', {}).get('summary', '')}
 description: {doc.get('domain', '')} - {kind}
 globs:
 {self._format_globs(doc.get('activation', {}).get('file_patterns', []))}
@@ -57,23 +54,16 @@ alwaysApply: false
 {raw}
 
 <!-- Cursor Rule Reference -->
-<!-- Generated: {now_iso()} -->
-<!-- Domain: {doc['domain']} -->
+<!-- Generated: {_now_iso()} -->
+<!-- Domain: {doc.get('domain', '')} -->
 """
 
-            safe_write(rule_path, content)
-            count += 1
+            _safe_write(rule_path, content)
+            count_rules += 1
 
-        print(f"✔ RulesEmitter: Generated {count} rules.")
+        print(f"✔ RulesEmitter: Generated {count_rules} rules.")
 
-    def _format_globs(self, patterns: List[str]) -> str:
-        return "\n".join(f"  - {p}" for p in patterns[:10]) if patterns else ""
-
-    def _emit_agents(self) -> None:
-        agents_dir = self.BASE_DIR / "agents"
-        count = 0
-
-        for agent_id, agent_ir in self.ir.get("agents", {}).items():
+        for agent_id, agent_ir in ir_dict.get("agents", {}).items():
             agent_file = agents_dir / f"{agent_id}.md"
 
             content = f"""---
@@ -102,7 +92,11 @@ version: 2.0
 - Review: {agent_ir.get('behavior', {}).get('review_style', 'balanced')}
 """
 
-            safe_write(agent_file, content)
-            count += 1
+            _safe_write(agent_file, content)
+            count_agents += 1
 
-        print(f"✔ AgentsEmitter: Generated {count} agent definitions.")
+        print(f"✔ AgentsEmitter: Generated {count_agents} agent definitions.")
+        print("🎉 CursorEmitter: All Cursor artifacts generated successfully!")
+
+    def _format_globs(self, patterns: List[str]) -> str:
+        return "\n".join(f"  - {p}" for p in patterns[:10]) if patterns else ""

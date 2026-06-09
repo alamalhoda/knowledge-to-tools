@@ -1,10 +1,8 @@
 {
-  "version": 2,
   "name": "frontend",
   "display_name": "Frontend Engineer Agent",
   "description": "Frontend execution agent responsible for Vue 3 UI, state management, UX, and frontend architecture.",
   "role": "Responsible for implementing UI and frontend architecture including Vue components, Pinia state management, UX/UI, responsiveness, accessibility, API integration, and performance optimization.",
-
   "knowledge": {
     "domains": ["frontend", "shared"],
     "categories": [
@@ -19,40 +17,37 @@
     ],
     "tags": []
   },
-
   "authority": {
-    "level": "advisory",
-    "scope": ["frontend"]
+    "level": "mid",
+    "can_delegate": false,
+    "escalation_path": ["architect"]
   },
-
-  "contracts": {
-    "inputs_from": ["architect"],
-    "outputs_to": ["reviewer"]
-  },
-
   "behavior": {
     "planning": "preferred",
     "testing": "preferred",
     "review_style": "balanced",
-    "verbosity": "normal"
+    "response_format": "normal"
   },
-
   "permissions": {
-    "file_write": true,
     "shell": false,
+    "edit": true,
+    "read": true,
     "network": false
   },
-
   "routing": {
     "priority": 80,
-    "selection_strategy": "hybrid"
+    "match_domains": ["frontend"],
+    "match_patterns": ["frontend/**/*.vue", "frontend/**/*.ts", "frontend/**/*.tsx"]
   },
-
-  "lifecycle": {
-    "status": "active",
-    "versioning": "semantic"
-  },
-
+  "capabilities": ["frontend-development", "component-design", "state-management", "ui-architecture", "vue-development"],
+  "workflows": ["frontend-feature-flow"],
+  "blueprints": [
+    "frontend-architecture-atomic-design",
+    "frontend-architecture-component-design",
+    "frontend-architecture-project-structure",
+    "frontend-architecture-separation-of-concerns"
+  ],
+  "bundles": ["frontend-foundation"],
   "metadata": {
     "created_at": "2026-06-07T19:00:00Z",
     "updated_at": "2026-06-07T19:00:00Z"

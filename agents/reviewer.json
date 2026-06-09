@@ -1,10 +1,8 @@
 {
-  "version": 2,
   "name": "reviewer",
   "display_name": "Reviewer Agent",
   "description": "Quality enforcement agent responsible for security, consistency, and engineering standards validation.",
   "role": "Responsible for code review, policy enforcement, security validation, architectural consistency checks, and ensuring compliance with engineering standards.",
-
   "knowledge": {
     "domains": ["backend", "frontend", "shared"],
     "categories": [
@@ -16,40 +14,38 @@
     ],
     "tags": []
   },
-
   "authority": {
-    "level": "enforcement",
-    "scope": ["repository-wide"]
+    "level": "senior",
+    "can_delegate": true,
+    "escalation_path": ["architect"]
   },
-
-  "contracts": {
-    "inputs_from": ["backend", "frontend"],
-    "outputs_to": ["backend", "frontend", "architect"]
-  },
-
   "behavior": {
     "planning": "none",
     "testing": "preferred",
     "review_style": "strict",
-    "verbosity": "low"
+    "response_format": "low"
   },
-
   "permissions": {
-    "file_write": false,
     "shell": false,
+    "edit": false,
+    "read": true,
     "network": false
   },
-
   "routing": {
     "priority": 90,
-    "selection_strategy": "hybrid"
+    "match_domains": ["backend", "frontend", "shared"],
+    "match_patterns": ["**/*.py", "**/*.ts", "**/*.tsx", "**/*.vue"]
   },
-
-  "lifecycle": {
-    "status": "active",
-    "versioning": "semantic"
-  },
-
+  "capabilities": ["code-review", "security-audit", "accessibility-audit"],
+  "workflows": ["backend-api-flow", "frontend-feature-flow"],
+  "blueprints": [
+    "backend-architecture-django-architecture",
+    "frontend-architecture-atomic-design",
+    "frontend-architecture-component-design",
+    "frontend-architecture-project-structure",
+    "frontend-architecture-separation-of-concerns"
+  ],
+  "bundles": ["engineering-foundation"],
   "metadata": {
     "created_at": "2026-06-07T19:00:00Z",
     "updated_at": "2026-06-07T19:00:00Z"

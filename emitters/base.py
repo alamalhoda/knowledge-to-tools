@@ -1,18 +1,28 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
-from typing import Dict, Any
+from pathlib import Path
+from typing import Dict, Any, Optional
+
+from ir.models import IRRoot
 
 
 class BaseEmitter(ABC):
     """
     Base class for all emitters in Aegis v2.
-    Each emitter receives IR (tool-neutral) and translates it into tool-specific output.
+    Each emitter receives IRRoot and translates it into tool-specific output.
     """
 
-    def __init__(self, ir: Dict[str, Any]):
-        if not isinstance(ir, dict):
-            raise ValueError("Emitter received invalid IR.")
-        self.ir = ir
+    BASE_DIR: Path = Path(".")
 
     @abstractmethod
-    def emit(self) -> None:
+    def emit(self, ir: IRRoot, output_dir: Optional[Path] = None) -> None:
         pass
+
+    def _resolve_output_dir(self, output_dir: Optional[Path] = None) -> Path:
+        if output_dir is not None:
+            return output_dir
+        return self.BASE_DIR
+
+    def _ir_to_dict(self, ir: IRRoot) -> Dict[str, Any]:
+        return ir.to_dict()

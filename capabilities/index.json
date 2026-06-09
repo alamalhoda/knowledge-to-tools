@@ -1,0 +1,122 @@
+{
+  "backend-development": {
+    "name": "Backend Development",
+    "description": "Capability for backend system implementation with Django and DRF.",
+    "domain": "backend",
+    "category": "development",
+    "tags": ["django", "drf", "api", "backend"],
+    "requires": [],
+    "provides": ["api-design", "database-modeling"],
+    "priority": 90
+  },
+  "frontend-development": {
+    "name": "Frontend Development",
+    "description": "Capability for frontend implementation with Vue 3 and Pinia.",
+    "domain": "frontend",
+    "category": "development",
+    "tags": ["vue", "pinia", "ui", "frontend"],
+    "requires": [],
+    "provides": ["component-design", "state-management"],
+    "priority": 90
+  },
+  "system-design": {
+    "name": "System Design",
+    "description": "Capability for architectural design and system-level decisions.",
+    "domain": "shared",
+    "category": "architecture",
+    "tags": ["architecture", "design", "system"],
+    "requires": [],
+    "provides": ["backend-development", "frontend-development"],
+    "priority": 95
+  },
+  "code-review": {
+    "name": "Code Review",
+    "description": "Capability for reviewing code for quality, security, and standards compliance.",
+    "domain": "shared",
+    "category": "quality",
+    "tags": ["review", "quality", "security", "standards"],
+    "requires": [],
+    "provides": [],
+    "priority": 85
+  },
+  "security-audit": {
+    "name": "Security Audit",
+    "description": "Capability for security validation and audit.",
+    "domain": "shared",
+    "category": "security",
+    "tags": ["security", "audit", "vulnerability"],
+    "requires": [],
+    "provides": [],
+    "priority": 80
+  },
+  "accessibility-audit": {
+    "name": "Accessibility Audit",
+    "description": "Capability for accessibility validation.",
+    "domain": "shared",
+    "category": "accessibility",
+    "tags": ["accessibility", "a11y", "wcag"],
+    "requires": [],
+    "provides": [],
+    "priority": 75
+  },
+  "api-design": {
+    "name": "API Design",
+    "description": "Capability for designing REST APIs.",
+    "domain": "backend",
+    "category": "api",
+    "tags": ["api", "rest", "drf"],
+    "requires": ["backend-development"],
+    "provides": [],
+    "priority": 80
+  },
+  "database-modeling": {
+    "name": "Database Modeling",
+    "description": "Capability for Django ORM model design.",
+    "domain": "backend",
+    "category": "database",
+    "tags": ["database", "orm", "django", "models"],
+    "requires": ["backend-development"],
+    "provides": [],
+    "priority": 80
+  },
+  "component-design": {
+    "name": "Component Design",
+    "description": "Capability for designing Vue components.",
+    "domain": "frontend",
+    "category": "components",
+    "tags": ["vue", "components", "design"],
+    "requires": ["frontend-development"],
+    "provides": [],
+    "priority": 80
+  },
+  "state-management": {
+    "name": "State Management",
+    "description": "Capability for implementing Pinia state management.",
+    "domain": "frontend",
+    "category": "state",
+    "tags": ["pinia", "state", "vue"],
+    "requires": ["frontend-development"],
+    "provides": [],
+    "priority": 75
+  },
+  "ui-architecture": {
+    "name": "UI Architecture",
+    "description": "Capability for UI/UX architecture decisions.",
+    "domain": "frontend",
+    "category": "architecture",
+    "tags": ["ui", "ux", "architecture", "design"],
+    "requires": ["system-design"],
+    "provides": ["component-design"],
+    "priority": 85
+  },
+  "vue-development": {
+    "name": "Vue Development",
+    "description": "Capability for Vue 3 development.",
+    "domain": "frontend",
+    "category": "development",
+    "tags": ["vue", "vue3", "frontend"],
+    "requires": ["frontend-development"],
+    "provides": ["component-design", "state-management"],
+    "priority": 85
+  }
+}

@@ -1,60 +1,60 @@
+from __future__ import annotations
+
 from pathlib import Path
-from datetime import datetime
-from typing import Dict, Any, List
-import json
+from datetime import datetime, timezone
+from typing import Dict, Any, List, Optional
 
 from .base import BaseEmitter
+from ir.models import IRRoot
 
 
-def safe_write(path: Path, content: str) -> None:
+def _now_iso() -> str:
+    return f"{datetime.now(timezone.utc).isoformat()}"
+
+
+def _safe_write(path: Path, content: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(content, encoding="utf-8")
 
 
-def now_iso() -> str:
-    return f"{datetime.utcnow().isoformat()}Z"
-
-
 class KiloEmitter(BaseEmitter):
     """
-    Kilo-specific emitter — translates RuntimeIR to Kilo format.
-    Reads composed agents and generates .kilo/ structure.
+    Kilo-specific emitter — translates IRRoot to Kilo format.
+    Consumes IR only; does not read knowledge directly.
     """
 
-    BASE_DIR = Path(".kilo")
-
-    def _get_knowledge_list(self) -> List[Dict[str, Any]]:
-        knowledge = self.ir.get("knowledge", {})
-        if isinstance(knowledge, dict):
-            return list(knowledge.values())
-        return knowledge
-
-    def emit(self) -> None:
-        self._emit_skills()
-        self._emit_workflows()
-        self._emit_architecture()
-        self._emit_agents()
+    def emit(self, ir: IRRoot, output_dir: Optional[Path] = None) -> None:
+        ir_dict = self._ir_to_dict(ir)
+        base = self._resolve_output_dir(output_dir)
+        self._emit_skills(ir_dict, base)
+        self._emit_workflows(ir_dict, base)
+        self._emit_architecture(ir_dict, base)
+        self._emit_agents(ir_dict, base)
         print("🎉 KiloEmitter: All Kilo artifacts generated successfully!")
 
-    def _emit_skills(self) -> None:
-        skills_dir = self.BASE_DIR / "skills"
+    def _emit_skills(self, ir_dict: Dict[str, Any], base: Path) -> None:
+        skills_dir = base / "skills"
         count = 0
 
-        for k in self._get_knowledge_list():
+        knowledge = ir_dict.get("knowledge", [])
+        if isinstance(knowledge, dict):
+            knowledge = list(knowledge.values())
+
+        for k in knowledge:
             kind = k.get("kind")
             if kind not in {"rule", "principle", "reference", "policy", "skill"}:
                 continue
 
             skill_path = skills_dir / k["id"] / "SKILL.md"
-            summary = k["content"]["summary"]
-            raw = k["content"]["raw"][:2000]
+            summary = k.get("content", {}).get("summary", "")
+            raw = k.get("content", {}).get("raw", "")[:2000]
 
             content = (
                 f"---\n"
                 f"id: {k['id']}\n"
                 f"kind: {kind}\n"
                 f"domain: {k['domain']}\n"
-                f"generated_at: {now_iso()}\n"
+                f"generated_at: {_now_iso()}\n"
                 f"---\n\n"
                 f"# {summary}\n\n"
                 f"{raw}\n\n"
@@ -63,72 +63,80 @@ class KiloEmitter(BaseEmitter):
                 f"**Kind**: {kind}\n"
             )
 
-            safe_write(skill_path, content)
+            _safe_write(skill_path, content)
             count += 1
 
         print(f"✔ SkillsEmitter: Generated {count} skills.")
 
-    def _emit_workflows(self) -> None:
-        wf_dir = self.BASE_DIR / "workflows"
+    def _emit_workflows(self, ir_dict: Dict[str, Any], base: Path) -> None:
+        wf_dir = base / "workflows"
         count = 0
 
-        for k in self._get_knowledge_list():
+        knowledge = ir_dict.get("knowledge", [])
+        if isinstance(knowledge, dict):
+            knowledge = list(knowledge.values())
+
+        for k in knowledge:
             if k.get("kind") != "workflow":
                 continue
 
             path = wf_dir / k["id"] / "WORKFLOW.md"
-            summary = k["content"]["summary"]
-            raw = k["content"]["raw"]
+            summary = k.get("content", {}).get("summary", "")
+            raw = k.get("content", {}).get("raw", "")
 
             content = (
                 f"---\n"
                 f"id: {k['id']}\n"
                 f"kind: workflow\n"
                 f"domain: {k['domain']}\n"
-                f"generated_at: {now_iso()}\n"
+                f"generated_at: {_now_iso()}\n"
                 f"---\n\n"
                 f"# Workflow: {summary}\n\n"
                 f"{raw}\n"
             )
 
-            safe_write(path, content)
+            _safe_write(path, content)
             count += 1
 
         print(f"✔ WorkflowEmitter: Generated {count} workflows.")
 
-    def _emit_architecture(self) -> None:
-        arch_dir = self.BASE_DIR / "architecture"
+    def _emit_architecture(self, ir_dict: Dict[str, Any], base: Path) -> None:
+        arch_dir = base / "architecture"
         count = 0
 
-        for k in self._get_knowledge_list():
+        knowledge = ir_dict.get("knowledge", [])
+        if isinstance(knowledge, dict):
+            knowledge = list(knowledge.values())
+
+        for k in knowledge:
             if k.get("kind") != "architecture":
                 continue
 
             path = arch_dir / k["id"] / "BLUEPRINT.md"
-            summary = k["content"]["summary"]
-            raw = k["content"]["raw"]
+            summary = k.get("content", {}).get("summary", "")
+            raw = k.get("content", {}).get("raw", "")
 
             content = (
                 f"---\n"
                 f"id: {k['id']}\n"
                 f"kind: architecture\n"
                 f"domain: {k['domain']}\n"
-                f"generated_at: {now_iso()}\n"
+                f"generated_at: {_now_iso()}\n"
                 f"---\n\n"
                 f"# Architecture Blueprint: {summary}\n\n"
                 f"{raw}\n"
             )
 
-            safe_write(path, content)
+            _safe_write(path, content)
             count += 1
 
         print(f"✔ ArchitectureEmitter: Generated {count} architectures.")
 
-    def _emit_agents(self) -> None:
-        agents_dir = self.BASE_DIR / "agents"
+    def _emit_agents(self, ir_dict: Dict[str, Any], base: Path) -> None:
+        agents_dir = base / "agents"
         agents_dir.mkdir(parents=True, exist_ok=True)
 
-        agents_data = self.ir.get("agents", {})
+        agents_data = ir_dict.get("agents", {})
 
         summary_sections: List[str] = [
             "# Aegis Agents",
@@ -143,13 +151,13 @@ class KiloEmitter(BaseEmitter):
             matches = self._resolve_agent_skills(agent_ir)
 
             agent_md = self._render_kilo_agent_md(agent_id, agent_ir, matches)
-            safe_write(agent_file, agent_md)
+            _safe_write(agent_file, agent_md)
 
             summary_sections.append(
                 self._render_summary_section(agent_id, agent_ir, matches)
             )
 
-        safe_write(Path(self.BASE_DIR / "AGENTS.md"), "\n".join(summary_sections))
+        _safe_write(Path(base / "AGENTS.md"), "\n".join(summary_sections))
 
         print(f"✔ AgentsEmitter: Generated {len(agents_data)} agents in .kilo/agents/ and AGENTS.md summary.")
 
@@ -175,9 +183,6 @@ display_name: {display}
 description: {desc}
 mode: primary
 color: "#3B82F6"
-
-model: gpt-4o
-temperature: 0.2
 
 permission:
   edit: {edit_perm}

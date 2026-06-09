@@ -1,0 +1,2761 @@
+{
+  "version": "2.0",
+  "generated_at": "2026-06-09T19:55:39.220731+00:00",
+  "source_hash": "ce65050dcb443977d154aea0baa93b402ea8afd9d1888cb1f0880f8013edc8f4",
+  "knowledge": [
+    {
+      "type": "knowledge_ir",
+      "id": "backend-api-rest",
+      "source": "knowledge/backend/api/rest.md",
+      "domain": "backend",
+      "category": "api",
+      "kind": "rule",
+      "content": {
+        "raw": "",
+        "summary": "Rest",
+        "key_points": [],
+        "sections": [],
+        "code_blocks": []
+      },
+      "activation": {
+        "file_patterns": [
+          "backend/**/views.py",
+          "backend/**/serializers.py",
+          "backend/**/urls.py"
+        ],
+        "keywords": [
+          "rest"
+        ]
+      },
+      "priority": 50,
+      "status": "active",
+      "applies_to": [
+        "backend/**/views.py",
+        "backend/**/serializers.py",
+        "backend/**/urls.py"
+      ],
+      "depends_on": [],
+      "related": [],
+      "relationships": {
+        "depends_on": [],
+        "related": []
+      },
+      "checksum": "f79c950209346f27d8adc5543f2a9ada142bc8e4eadae213b25de84afe55573a"
+    },
+    {
+      "type": "knowledge_ir",
+      "id": "backend-architecture-django-architecture",
+      "source": "knowledge/backend/architecture/django-architecture.md",
+      "domain": "backend",
+      "category": "architecture",
+      "kind": "architecture",
+      "content": {
+        "raw": "",
+        "summary": "Django Architecture",
+        "key_points": [],
+        "sections": [],
+        "code_blocks": []
+      },
+      "activation": {
+        "file_patterns": [
+          "backend/**/views.py",
+          "backend/**/serializers.py",
+          "backend/**/urls.py"
+        ],
+        "keywords": [
+          "architecture",
+          "django"
+        ]
+      },
+      "priority": 50,
+      "status": "active",
+      "applies_to": [
+        "backend/**/views.py",
+        "backend/**/serializers.py",
+        "backend/**/urls.py"
+      ],
+      "depends_on": [],
+      "related": [],
+      "relationships": {
+        "depends_on": [],
+        "related": []
+      },
+      "checksum": "e283076bd23059203b7439cd63ef140808f14231d12ef54e0a11d96c8278ef4d"
+    },
+    {
+      "type": "knowledge_ir",
+      "id": "backend-configuration-settings",
+      "source": "knowledge/backend/configuration/settings.md",
+      "domain": "backend",
+      "category": "configuration",
+      "kind": "skill",
+      "content": {
+        "raw": "",
+        "summary": "Settings",
+        "key_points": [],
+        "sections": [],
+        "code_blocks": []
+      },
+      "activation": {
+        "file_patterns": [
+          "backend/**/settings*.py",
+          "backend/.env*"
+        ],
+        "keywords": [
+          "settings"
+        ]
+      },
+      "priority": 50,
+      "status": "active",
+      "applies_to": [
+        "backend/**/settings*.py",
+        "backend/.env*"
+      ],
+      "depends_on": [],
+      "related": [],
+      "relationships": {
+        "depends_on": [],
+        "related": []
+      },
+      "checksum": "132ec6e9eb0d2b753ea62774a2fe96925ede157840d2059c4cd0f0764896b06d"
+    },
+    {
+      "type": "knowledge_ir",
+      "id": "backend-core-ai-guardrails",
+      "source": "knowledge/backend/core/ai-guardrails.md",
+      "domain": "backend",
+      "category": "core",
+      "kind": "rule",
+      "content": {
+        "raw": "",
+        "summary": "Ai Guardrails",
+        "key_points": [],
+        "sections": [],
+        "code_blocks": []
+      },
+      "activation": {
+        "file_patterns": [
+          "backend/**/*.py"
+        ],
+        "keywords": [
+          "guardrails"
+        ]
+      },
+      "priority": 50,
+      "status": "active",
+      "applies_to": [
+        "backend/**/*.py"
+      ],
+      "depends_on": [],
+      "related": [],
+      "relationships": {
+        "depends_on": [],
+        "related": []
+      },
+      "checksum": "a2c67668dfa44411809ec191b400c17014487929578704c67b055d34d8c27b6c"
+    },
+    {
+      "type": "knowledge_ir",
+      "id": "backend-core-design-principles",
+      "source": "knowledge/backend/core/design-principles.md",
+      "domain": "backend",
+      "category": "core",
+      "kind": "principle",
+      "content": {
+        "raw": "",
+        "summary": "Design Principles",
+        "key_points": [],
+        "sections": [],
+        "code_blocks": []
+      },
+      "activation": {
+        "file_patterns": [
+          "backend/**/*.py"
+        ],
+        "keywords": [
+          "design",
+          "principles"
+        ]
+      },
+      "priority": 50,
+      "status": "active",
+      "applies_to": [
+        "backend/**/*.py"
+      ],
+      "depends_on": [],
+      "related": [],
+      "relationships": {
+        "depends_on": [],
+        "related": []
+      },
+      "checksum": "34a8492b66e049aecfc9b5a44ccbfa35032c2423a7e3bc571394b42179fcf73c"
+    },
+    {
+      "type": "knowledge_ir",
+      "id": "backend-core-quick-reference",
+      "source": "knowledge/backend/core/quick-reference.md",
+      "domain": "backend",
+      "category": "core",
+      "kind": "reference",
+      "content": {
+        "raw": "",
+        "summary": "Quick Reference",
+        "key_points": [],
+        "sections": [],
+        "code_blocks": []
+      },
+      "activation": {
+        "file_patterns": [
+          "backend/**/*.py"
+        ],
+        "keywords": [
+          "quick",
+          "reference"
+        ]
+      },
+      "priority": 50,
+      "status": "active",
+      "applies_to": [
+        "backend/**/*.py"
+      ],
+      "depends_on": [],
+      "related": [],
+      "relationships": {
+        "depends_on": [],
+        "related": []
+      },
+      "checksum": "9ef497db81bd2bfd43ed4ee46172fb2e1484e3141e193f11c0707fe826853ceb"
+    },
+    {
+      "type": "knowledge_ir",
+      "id": "backend-database-models",
+      "source": "knowledge/backend/database/models.md",
+      "domain": "backend",
+      "category": "database",
+      "kind": "rule",
+      "content": {
+        "raw": "",
+        "summary": "Models",
+        "key_points": [],
+        "sections": [],
+        "code_blocks": []
+      },
+      "activation": {
+        "file_patterns": [
+          "backend/**/models.py",
+          "backend/**/migrations/*.py"
+        ],
+        "keywords": [
+          "models"
+        ]
+      },
+      "priority": 50,
+      "status": "active",
+      "applies_to": [
+        "backend/**/models.py",
+        "backend/**/migrations/*.py"
+      ],
+      "depends_on": [],
+      "related": [],
+      "relationships": {
+        "depends_on": [],
+        "related": []
+      },
+      "checksum": "0acb89f3847a30d6527019366c5fb143ec163198abd71a21b1dd6b04e347cd83"
+    },
+    {
+      "type": "knowledge_ir",
+      "id": "backend-documentation-file-header",
+      "source": "knowledge/backend/documentation/file-header.md",
+      "domain": "backend",
+      "category": "documentation",
+      "kind": "reference",
+      "content": {
+        "raw": "",
+        "summary": "File Header",
+        "key_points": [],
+        "sections": [],
+        "code_blocks": []
+      },
+      "activation": {
+        "file_patterns": [
+          "backend/**/*.py"
+        ],
+        "keywords": [
+          "header",
+          "file"
+        ]
+      },
+      "priority": 50,
+      "status": "active",
+      "applies_to": [
+        "backend/**/*.py"
+      ],
+      "depends_on": [],
+      "related": [],
+      "relationships": {
+        "depends_on": [],
+        "related": []
+      },
+      "checksum": "66b5572a02e4a5a42fceb46209bffd71704bf9de62644ecf29a45fdd78f748d0"
+    },
+    {
+      "type": "knowledge_ir",
+      "id": "backend-logging-monitoring",
+      "source": "knowledge/backend/logging/monitoring.md",
+      "domain": "backend",
+      "category": "logging",
+      "kind": "reference",
+      "content": {
+        "raw": "",
+        "summary": "Monitoring",
+        "key_points": [],
+        "sections": [],
+        "code_blocks": []
+      },
+      "activation": {
+        "file_patterns": [
+          "backend/**/*.py"
+        ],
+        "keywords": [
+          "monitoring"
+        ]
+      },
+      "priority": 50,
+      "status": "active",
+      "applies_to": [
+        "backend/**/*.py"
+      ],
+      "depends_on": [],
+      "related": [],
+      "relationships": {
+        "depends_on": [],
+        "related": []
+      },
+      "checksum": "f5f0efb757a545ad018e3cff090929592abd710c96dcc1ce5e2390a28f328c3e"
+    },
+    {
+      "type": "knowledge_ir",
+      "id": "backend-patterns-anti-patterns",
+      "source": "knowledge/backend/patterns/anti-patterns.md",
+      "domain": "backend",
+      "category": "patterns",
+      "kind": "reference",
+      "content": {
+        "raw": "",
+        "summary": "Anti Patterns",
+        "key_points": [],
+        "sections": [],
+        "code_blocks": []
+      },
+      "activation": {
+        "file_patterns": [
+          "backend/**/*.py"
+        ],
+        "keywords": [
+          "patterns",
+          "anti"
+        ]
+      },
+      "priority": 50,
+      "status": "active",
+      "applies_to": [
+        "backend/**/*.py"
+      ],
+      "depends_on": [],
+      "related": [],
+      "relationships": {
+        "depends_on": [],
+        "related": []
+      },
+      "checksum": "9484e99b03073087aac48709dc88beec0f86c68d3007da4446231473fcc8db41"
+    },
+    {
+      "type": "knowledge_ir",
+      "id": "backend-patterns-progressive-development",
+      "source": "knowledge/backend/patterns/progressive-development.md",
+      "domain": "backend",
+      "category": "patterns",
+      "kind": "workflow",
+      "content": {
+        "raw": "",
+        "summary": "Progressive Development",
+        "key_points": [],
+        "sections": [],
+        "code_blocks": []
+      },
+      "activation": {
+        "file_patterns": [
+          "backend/**/*.py"
+        ],
+        "keywords": [
+          "progressive",
+          "development"
+        ]
+      },
+      "priority": 50,
+      "status": "active",
+      "applies_to": [
+        "backend/**/*.py"
+      ],
+      "depends_on": [],
+      "related": [],
+      "relationships": {
+        "depends_on": [],
+        "related": []
+      },
+      "checksum": "6ab155c8cf1838f73a018542f6c9831d2446d79b1be26b145e2ad1f9232b64b3"
+    },
+    {
+      "type": "knowledge_ir",
+      "id": "backend-performance-optimization",
+      "source": "knowledge/backend/performance/optimization.md",
+      "domain": "backend",
+      "category": "performance",
+      "kind": "rule",
+      "content": {
+        "raw": "",
+        "summary": "Optimization",
+        "key_points": [],
+        "sections": [],
+        "code_blocks": []
+      },
+      "activation": {
+        "file_patterns": [
+          "backend/**/views.py",
+          "backend/**/models.py"
+        ],
+        "keywords": [
+          "optimization"
+        ]
+      },
+      "priority": 50,
+      "status": "active",
+      "applies_to": [
+        "backend/**/views.py",
+        "backend/**/models.py"
+      ],
+      "depends_on": [],
+      "related": [],
+      "relationships": {
+        "depends_on": [],
+        "related": []
+      },
+      "checksum": "94b687ec02a32868de8f42efec21a9c6e3c8862dc303681dc8734a42ef21f9b2"
+    },
+    {
+      "type": "knowledge_ir",
+      "id": "backend-python-best-practices",
+      "source": "knowledge/backend/python/best-practices.md",
+      "domain": "backend",
+      "category": "python",
+      "kind": "skill",
+      "content": {
+        "raw": "",
+        "summary": "Best Practices",
+        "key_points": [],
+        "sections": [],
+        "code_blocks": []
+      },
+      "activation": {
+        "file_patterns": [
+          "backend/**/*.py"
+        ],
+        "keywords": [
+          "practices",
+          "best"
+        ]
+      },
+      "priority": 50,
+      "status": "active",
+      "applies_to": [
+        "backend/**/*.py"
+      ],
+      "depends_on": [],
+      "related": [],
+      "relationships": {
+        "depends_on": [],
+        "related": []
+      },
+      "checksum": "9459a8feadfe4d6406ed39ed376549153b65a3f3ad852a2880d857db6b7f7b5e"
+    },
+    {
+      "type": "knowledge_ir",
+      "id": "backend-security-security",
+      "source": "knowledge/backend/security/security.md",
+      "domain": "backend",
+      "category": "security",
+      "kind": "rule",
+      "content": {
+        "raw": "",
+        "summary": "Security",
+        "key_points": [],
+        "sections": [],
+        "code_blocks": []
+      },
+      "activation": {
+        "file_patterns": [
+          "backend/**/views.py",
+          "backend/**/serializers.py",
+          "backend/**/settings*.py"
+        ],
+        "keywords": [
+          "security"
+        ]
+      },
+      "priority": 50,
+      "status": "active",
+      "applies_to": [
+        "backend/**/views.py",
+        "backend/**/serializers.py",
+        "backend/**/settings*.py"
+      ],
+      "depends_on": [],
+      "related": [],
+      "relationships": {
+        "depends_on": [],
+        "related": []
+      },
+      "checksum": "9b4cdb86d056c80e774a480d25bf931935144473b5ad2549c7ac8f2e0af52b43"
+    },
+    {
+      "type": "knowledge_ir",
+      "id": "backend-testing-strategy",
+      "source": "knowledge/backend/testing/strategy.md",
+      "domain": "backend",
+      "category": "testing",
+      "kind": "workflow",
+      "content": {
+        "raw": "",
+        "summary": "Strategy",
+        "key_points": [],
+        "sections": [],
+        "code_blocks": []
+      },
+      "activation": {
+        "file_patterns": [
+          "backend/**/test*.py",
+          "backend/**/tests/**/*.py"
+        ],
+        "keywords": [
+          "strategy"
+        ]
+      },
+      "priority": 50,
+      "status": "active",
+      "applies_to": [
+        "backend/**/test*.py",
+        "backend/**/tests/**/*.py"
+      ],
+      "depends_on": [],
+      "related": [],
+      "relationships": {
+        "depends_on": [],
+        "related": []
+      },
+      "checksum": "13f256b712cd0d035dbd11106ed23d78f1036a6b01332bf8ffb2c92d65abc288"
+    },
+    {
+      "type": "knowledge_ir",
+      "id": "frontend-architecture-atomic-design",
+      "source": "knowledge/frontend/architecture/atomic-design.md",
+      "domain": "frontend",
+      "category": "architecture",
+      "kind": "architecture",
+      "content": {
+        "raw": "",
+        "summary": "Atomic Design",
+        "key_points": [],
+        "sections": [],
+        "code_blocks": []
+      },
+      "activation": {
+        "file_patterns": [
+          "frontend/src/**/*.vue",
+          "frontend/src/**/*.js"
+        ],
+        "keywords": [
+          "design",
+          "atomic"
+        ]
+      },
+      "priority": 50,
+      "status": "active",
+      "applies_to": [
+        "frontend/src/**/*.vue",
+        "frontend/src/**/*.js"
+      ],
+      "depends_on": [],
+      "related": [],
+      "relationships": {
+        "depends_on": [],
+        "related": []
+      },
+      "checksum": "50a5a1886ffb0c8a1b26b930d73ae5690604a97acd46b1c1e1d64e03a5945a76"
+    },
+    {
+      "type": "knowledge_ir",
+      "id": "frontend-architecture-component-design",
+      "source": "knowledge/frontend/architecture/component-design.md",
+      "domain": "frontend",
+      "category": "architecture",
+      "kind": "architecture",
+      "content": {
+        "raw": "",
+        "summary": "Component Design",
+        "key_points": [],
+        "sections": [],
+        "code_blocks": []
+      },
+      "activation": {
+        "file_patterns": [
+          "frontend/src/**/*.vue",
+          "frontend/src/**/*.js"
+        ],
+        "keywords": [
+          "design",
+          "component"
+        ]
+      },
+      "priority": 50,
+      "status": "active",
+      "applies_to": [
+        "frontend/src/**/*.vue",
+        "frontend/src/**/*.js"
+      ],
+      "depends_on": [],
+      "related": [],
+      "relationships": {
+        "depends_on": [],
+        "related": []
+      },
+      "checksum": "e1728d279a93b8ceedc1440b96c379ced4014aa52991c0782d1bc1bf390cfc08"
+    },
+    {
+      "type": "knowledge_ir",
+      "id": "frontend-architecture-project-structure",
+      "source": "knowledge/frontend/architecture/project-structure.md",
+      "domain": "frontend",
+      "category": "architecture",
+      "kind": "architecture",
+      "content": {
+        "raw": "",
+        "summary": "Project Structure",
+        "key_points": [],
+        "sections": [],
+        "code_blocks": []
+      },
+      "activation": {
+        "file_patterns": [
+          "frontend/**/*"
+        ],
+        "keywords": [
+          "structure",
+          "project"
+        ]
+      },
+      "priority": 50,
+      "status": "active",
+      "applies_to": [
+        "frontend/**/*"
+      ],
+      "depends_on": [],
+      "related": [],
+      "relationships": {
+        "depends_on": [],
+        "related": []
+      },
+      "checksum": "d4e040636db5b4d981e37be14490a26cca7ee477c04db82d33beac628dfb1b5f"
+    },
+    {
+      "type": "knowledge_ir",
+      "id": "frontend-architecture-separation-of-concerns",
+      "source": "knowledge/frontend/architecture/separation-of-concerns.md",
+      "domain": "frontend",
+      "category": "architecture",
+      "kind": "architecture",
+      "content": {
+        "raw": "",
+        "summary": "Separation Of Concerns",
+        "key_points": [],
+        "sections": [],
+        "code_blocks": []
+      },
+      "activation": {
+        "file_patterns": [
+          "frontend/src/**/*.vue",
+          "frontend/src/**/*.js"
+        ],
+        "keywords": [
+          "concerns",
+          "separation"
+        ]
+      },
+      "priority": 50,
+      "status": "active",
+      "applies_to": [
+        "frontend/src/**/*.vue",
+        "frontend/src/**/*.js"
+      ],
+      "depends_on": [],
+      "related": [],
+      "relationships": {
+        "depends_on": [],
+        "related": []
+      },
+      "checksum": "ce8d260d2acb176edba782a55312949ccbdadb5da5b7ea62152fdebf18b56ee8"
+    },
+    {
+      "type": "knowledge_ir",
+      "id": "frontend-architecture-solid",
+      "source": "knowledge/frontend/architecture/solid.md",
+      "domain": "frontend",
+      "category": "architecture",
+      "kind": "principle",
+      "content": {
+        "raw": "",
+        "summary": "Solid",
+        "key_points": [],
+        "sections": [],
+        "code_blocks": []
+      },
+      "activation": {
+        "file_patterns": [
+          "frontend/src/**/*.vue",
+          "frontend/src/**/*.js"
+        ],
+        "keywords": [
+          "solid"
+        ]
+      },
+      "priority": 50,
+      "status": "active",
+      "applies_to": [
+        "frontend/src/**/*.vue",
+        "frontend/src/**/*.js"
+      ],
+      "depends_on": [],
+      "related": [],
+      "relationships": {
+        "depends_on": [],
+        "related": []
+      },
+      "checksum": "eaab6ceb443d2f7e2b359c8d96e2c264d5d2a5a5736a7a5b5a265edfb9393e8b"
+    },
+    {
+      "type": "knowledge_ir",
+      "id": "frontend-core-ai-behavior",
+      "source": "knowledge/frontend/core/ai-behavior.md",
+      "domain": "frontend",
+      "category": "core",
+      "kind": "rule",
+      "content": {
+        "raw": "",
+        "summary": "Ai Behavior",
+        "key_points": [],
+        "sections": [],
+        "code_blocks": []
+      },
+      "activation": {
+        "file_patterns": [
+          "frontend/src/**/*.vue",
+          "frontend/src/**/*.js",
+          "frontend/src/**/*.css"
+        ],
+        "keywords": [
+          "behavior"
+        ]
+      },
+      "priority": 50,
+      "status": "active",
+      "applies_to": [
+        "frontend/src/**/*.vue",
+        "frontend/src/**/*.js",
+        "frontend/src/**/*.css"
+      ],
+      "depends_on": [],
+      "related": [],
+      "relationships": {
+        "depends_on": [],
+        "related": []
+      },
+      "checksum": "90a4a1e7fa5f58390232cb0d1dc93578ae8380f097c57ceda8907106e392f270"
+    },
+    {
+      "type": "knowledge_ir",
+      "id": "frontend-core-code-quality",
+      "source": "knowledge/frontend/core/code-quality.md",
+      "domain": "frontend",
+      "category": "core",
+      "kind": "reference",
+      "content": {
+        "raw": "",
+        "summary": "Code Quality",
+        "key_points": [],
+        "sections": [],
+        "code_blocks": []
+      },
+      "activation": {
+        "file_patterns": [
+          "frontend/src/**/*.vue",
+          "frontend/src/**/*.js",
+          "frontend/src/**/*.css"
+        ],
+        "keywords": [
+          "quality",
+          "code"
+        ]
+      },
+      "priority": 50,
+      "status": "active",
+      "applies_to": [
+        "frontend/src/**/*.vue",
+        "frontend/src/**/*.js",
+        "frontend/src/**/*.css"
+      ],
+      "depends_on": [],
+      "related": [],
+      "relationships": {
+        "depends_on": [],
+        "related": []
+      },
+      "checksum": "9270852dcd2d31c9f03ff238e03e5540c17834ce4f3ee0361ed24bde3cac9201"
+    },
+    {
+      "type": "knowledge_ir",
+      "id": "frontend-core-meta-principles",
+      "source": "knowledge/frontend/core/meta-principles.md",
+      "domain": "frontend",
+      "category": "core",
+      "kind": "principle",
+      "content": {
+        "raw": "",
+        "summary": "Meta Principles",
+        "key_points": [],
+        "sections": [],
+        "code_blocks": []
+      },
+      "activation": {
+        "file_patterns": [
+          "frontend/src/**/*.vue",
+          "frontend/src/**/*.js",
+          "frontend/src/**/*.css"
+        ],
+        "keywords": [
+          "principles",
+          "meta"
+        ]
+      },
+      "priority": 50,
+      "status": "active",
+      "applies_to": [
+        "frontend/src/**/*.vue",
+        "frontend/src/**/*.js",
+        "frontend/src/**/*.css"
+      ],
+      "depends_on": [],
+      "related": [],
+      "relationships": {
+        "depends_on": [],
+        "related": []
+      },
+      "checksum": "4aa3dbcc74687cc38aed1a34cca2658b6390a79c8d8e9b595a51ac84ed9f0713"
+    },
+    {
+      "type": "knowledge_ir",
+      "id": "frontend-patterns-anti-patterns",
+      "source": "knowledge/frontend/patterns/anti-patterns.md",
+      "domain": "frontend",
+      "category": "patterns",
+      "kind": "reference",
+      "content": {
+        "raw": "",
+        "summary": "Anti Patterns",
+        "key_points": [],
+        "sections": [],
+        "code_blocks": []
+      },
+      "activation": {
+        "file_patterns": [
+          "frontend/src/**/*.vue",
+          "frontend/src/**/*.js"
+        ],
+        "keywords": [
+          "patterns",
+          "anti"
+        ]
+      },
+      "priority": 50,
+      "status": "active",
+      "applies_to": [
+        "frontend/src/**/*.vue",
+        "frontend/src/**/*.js"
+      ],
+      "depends_on": [],
+      "related": [],
+      "relationships": {
+        "depends_on": [],
+        "related": []
+      },
+      "checksum": "16941e0834d17ec1b60293a719d4b70cf5efd643bb34e22ae10a04d1063b7df5"
+    },
+    {
+      "type": "knowledge_ir",
+      "id": "frontend-patterns-api-integration",
+      "source": "knowledge/frontend/patterns/api-integration.md",
+      "domain": "frontend",
+      "category": "patterns",
+      "kind": "skill",
+      "content": {
+        "raw": "",
+        "summary": "Api Integration",
+        "key_points": [],
+        "sections": [],
+        "code_blocks": []
+      },
+      "activation": {
+        "file_patterns": [
+          "frontend/src/**/*.vue",
+          "frontend/src/**/*.js"
+        ],
+        "keywords": [
+          "integration"
+        ]
+      },
+      "priority": 50,
+      "status": "active",
+      "applies_to": [
+        "frontend/src/**/*.vue",
+        "frontend/src/**/*.js"
+      ],
+      "depends_on": [],
+      "related": [],
+      "relationships": {
+        "depends_on": [],
+        "related": []
+      },
+      "checksum": "85e22444b92b96602c1abdaa1f5767899ea86e7e6e7168bcfb93c0fd5b32dff7"
+    },
+    {
+      "type": "knowledge_ir",
+      "id": "frontend-patterns-component-patterns",
+      "source": "knowledge/frontend/patterns/component-patterns.md",
+      "domain": "frontend",
+      "category": "patterns",
+      "kind": "skill",
+      "content": {
+        "raw": "",
+        "summary": "Component Patterns",
+        "key_points": [],
+        "sections": [],
+        "code_blocks": []
+      },
+      "activation": {
+        "file_patterns": [
+          "frontend/src/**/*.vue"
+        ],
+        "keywords": [
+          "patterns",
+          "component"
+        ]
+      },
+      "priority": 50,
+      "status": "active",
+      "applies_to": [
+        "frontend/src/**/*.vue"
+      ],
+      "depends_on": [],
+      "related": [],
+      "relationships": {
+        "depends_on": [],
+        "related": []
+      },
+      "checksum": "9bdab4ccc1fc305ee3820072123bb02a6e7de6368ee0dbf7a0b84473b13d92d4"
+    },
+    {
+      "type": "knowledge_ir",
+      "id": "frontend-patterns-props-events",
+      "source": "knowledge/frontend/patterns/props-events.md",
+      "domain": "frontend",
+      "category": "patterns",
+      "kind": "skill",
+      "content": {
+        "raw": "",
+        "summary": "Props Events",
+        "key_points": [],
+        "sections": [],
+        "code_blocks": []
+      },
+      "activation": {
+        "file_patterns": [
+          "frontend/src/**/*.vue",
+          "frontend/src/**/*.js"
+        ],
+        "keywords": [
+          "props",
+          "events"
+        ]
+      },
+      "priority": 50,
+      "status": "active",
+      "applies_to": [
+        "frontend/src/**/*.vue",
+        "frontend/src/**/*.js"
+      ],
+      "depends_on": [],
+      "related": [],
+      "relationships": {
+        "depends_on": [],
+        "related": []
+      },
+      "checksum": "7a498905e4d544c00d759a982d7f3f78d9ff4bdc62e52a61bd5a4d14f05cba12"
+    },
+    {
+      "type": "knowledge_ir",
+      "id": "frontend-patterns-reactivity",
+      "source": "knowledge/frontend/patterns/reactivity.md",
+      "domain": "frontend",
+      "category": "patterns",
+      "kind": "skill",
+      "content": {
+        "raw": "",
+        "summary": "Reactivity",
+        "key_points": [],
+        "sections": [],
+        "code_blocks": []
+      },
+      "activation": {
+        "file_patterns": [
+          "frontend/src/**/*.vue",
+          "frontend/src/**/*.js"
+        ],
+        "keywords": [
+          "reactivity"
+        ]
+      },
+      "priority": 50,
+      "status": "active",
+      "applies_to": [
+        "frontend/src/**/*.vue",
+        "frontend/src/**/*.js"
+      ],
+      "depends_on": [],
+      "related": [],
+      "relationships": {
+        "depends_on": [],
+        "related": []
+      },
+      "checksum": "de99448a9b727916ff9c02177ad65f86dc5221be03d5751e17ba48537ae06d9c"
+    },
+    {
+      "type": "knowledge_ir",
+      "id": "frontend-performance-asset-management",
+      "source": "knowledge/frontend/performance/asset-management.md",
+      "domain": "frontend",
+      "category": "performance",
+      "kind": "rule",
+      "content": {
+        "raw": "",
+        "summary": "Asset Management",
+        "key_points": [],
+        "sections": [],
+        "code_blocks": []
+      },
+      "activation": {
+        "file_patterns": [
+          "frontend/src/**/*.vue",
+          "frontend/src/**/*.js",
+          "frontend/src/**/*.css"
+        ],
+        "keywords": [
+          "management",
+          "asset"
+        ]
+      },
+      "priority": 50,
+      "status": "active",
+      "applies_to": [
+        "frontend/src/**/*.vue",
+        "frontend/src/**/*.js",
+        "frontend/src/**/*.css"
+      ],
+      "depends_on": [],
+      "related": [],
+      "relationships": {
+        "depends_on": [],
+        "related": []
+      },
+      "checksum": "7c06eed9121c150a67655a0bb71da6660f7989ab56ef93b3ed2f154d99636337"
+    },
+    {
+      "type": "knowledge_ir",
+      "id": "frontend-performance-bundle-size",
+      "source": "knowledge/frontend/performance/bundle-size.md",
+      "domain": "frontend",
+      "category": "performance",
+      "kind": "rule",
+      "content": {
+        "raw": "",
+        "summary": "Bundle Size",
+        "key_points": [],
+        "sections": [],
+        "code_blocks": []
+      },
+      "activation": {
+        "file_patterns": [
+          "frontend/src/**/*.js",
+          "frontend/vite.config.*"
+        ],
+        "keywords": [
+          "size",
+          "bundle"
+        ]
+      },
+      "priority": 50,
+      "status": "active",
+      "applies_to": [
+        "frontend/src/**/*.js",
+        "frontend/vite.config.*"
+      ],
+      "depends_on": [],
+      "related": [],
+      "relationships": {
+        "depends_on": [],
+        "related": []
+      },
+      "checksum": "5efbbc829f9ff651766484667766d7b0b5b8ad3cc245cb7916ba3e64854b3fab"
+    },
+    {
+      "type": "knowledge_ir",
+      "id": "frontend-performance-core-web-vitals",
+      "source": "knowledge/frontend/performance/core-web-vitals.md",
+      "domain": "frontend",
+      "category": "performance",
+      "kind": "skill",
+      "content": {
+        "raw": "",
+        "summary": "Core Web Vitals",
+        "key_points": [],
+        "sections": [],
+        "code_blocks": []
+      },
+      "activation": {
+        "file_patterns": [
+          "frontend/src/**/*.vue",
+          "frontend/src/**/*.js",
+          "frontend/src/**/*.css"
+        ],
+        "keywords": [
+          "vitals",
+          "core"
+        ]
+      },
+      "priority": 50,
+      "status": "active",
+      "applies_to": [
+        "frontend/src/**/*.vue",
+        "frontend/src/**/*.js",
+        "frontend/src/**/*.css"
+      ],
+      "depends_on": [],
+      "related": [],
+      "relationships": {
+        "depends_on": [],
+        "related": []
+      },
+      "checksum": "255050774885810221648b3c08c10eaaaf7d0e214b873adcad4d32101c3bb8e6"
+    },
+    {
+      "type": "knowledge_ir",
+      "id": "frontend-performance-optimization",
+      "source": "knowledge/frontend/performance/optimization.md",
+      "domain": "frontend",
+      "category": "performance",
+      "kind": "skill",
+      "content": {
+        "raw": "",
+        "summary": "Optimization",
+        "key_points": [],
+        "sections": [],
+        "code_blocks": []
+      },
+      "activation": {
+        "file_patterns": [
+          "frontend/src/**/*.vue",
+          "frontend/src/**/*.js"
+        ],
+        "keywords": [
+          "optimization"
+        ]
+      },
+      "priority": 50,
+      "status": "active",
+      "applies_to": [
+        "frontend/src/**/*.vue",
+        "frontend/src/**/*.js"
+      ],
+      "depends_on": [],
+      "related": [],
+      "relationships": {
+        "depends_on": [],
+        "related": []
+      },
+      "checksum": "9524eb810e5d3e080ed4c8a306751708c437911a8b977333ecfb990e2cfb9d5f"
+    },
+    {
+      "type": "knowledge_ir",
+      "id": "frontend-performance-runtime",
+      "source": "knowledge/frontend/performance/runtime.md",
+      "domain": "frontend",
+      "category": "performance",
+      "kind": "skill",
+      "content": {
+        "raw": "",
+        "summary": "Runtime",
+        "key_points": [],
+        "sections": [],
+        "code_blocks": []
+      },
+      "activation": {
+        "file_patterns": [
+          "frontend/src/**/*.vue",
+          "frontend/src/**/*.js"
+        ],
+        "keywords": [
+          "runtime"
+        ]
+      },
+      "priority": 50,
+      "status": "active",
+      "applies_to": [
+        "frontend/src/**/*.vue",
+        "frontend/src/**/*.js"
+      ],
+      "depends_on": [],
+      "related": [],
+      "relationships": {
+        "depends_on": [],
+        "related": []
+      },
+      "checksum": "324f6b07bc0307a230cf561fdbbba51a3c71fe5477220635b954fea7ddbd006d"
+    },
+    {
+      "type": "knowledge_ir",
+      "id": "frontend-state-local-vs-global",
+      "source": "knowledge/frontend/state/local-vs-global.md",
+      "domain": "frontend",
+      "category": "state",
+      "kind": "skill",
+      "content": {
+        "raw": "",
+        "summary": "Local Vs Global",
+        "key_points": [],
+        "sections": [],
+        "code_blocks": []
+      },
+      "activation": {
+        "file_patterns": [
+          "frontend/src/**/*.vue",
+          "frontend/src/**/*.js"
+        ],
+        "keywords": [
+          "global",
+          "local"
+        ]
+      },
+      "priority": 50,
+      "status": "active",
+      "applies_to": [
+        "frontend/src/**/*.vue",
+        "frontend/src/**/*.js"
+      ],
+      "depends_on": [],
+      "related": [],
+      "relationships": {
+        "depends_on": [],
+        "related": []
+      },
+      "checksum": "7bad6c4062ef5906ecf00833db7eebe45c009524152c662a4f3c492fd954c014"
+    },
+    {
+      "type": "knowledge_ir",
+      "id": "frontend-state-pinia",
+      "source": "knowledge/frontend/state/pinia.md",
+      "domain": "frontend",
+      "category": "state",
+      "kind": "skill",
+      "content": {
+        "raw": "",
+        "summary": "Pinia",
+        "key_points": [],
+        "sections": [],
+        "code_blocks": []
+      },
+      "activation": {
+        "file_patterns": [
+          "frontend/src/**/*.vue",
+          "frontend/src/stores/**/*.js"
+        ],
+        "keywords": [
+          "pinia"
+        ]
+      },
+      "priority": 50,
+      "status": "active",
+      "applies_to": [
+        "frontend/src/**/*.vue",
+        "frontend/src/stores/**/*.js"
+      ],
+      "depends_on": [],
+      "related": [],
+      "relationships": {
+        "depends_on": [],
+        "related": []
+      },
+      "checksum": "b00ce7908670eb212f1ef24e1fa23b76e84a95343eefe62db74312fb81bc52ba"
+    },
+    {
+      "type": "knowledge_ir",
+      "id": "frontend-testing-e2e-testing",
+      "source": "knowledge/frontend/testing/e2e-testing.md",
+      "domain": "frontend",
+      "category": "testing",
+      "kind": "workflow",
+      "content": {
+        "raw": "",
+        "summary": "E2E Testing",
+        "key_points": [],
+        "sections": [],
+        "code_blocks": []
+      },
+      "activation": {
+        "file_patterns": [
+          "frontend/**/*.e2e.js",
+          "frontend/e2e/**/*"
+        ],
+        "keywords": [
+          "testing"
+        ]
+      },
+      "priority": 50,
+      "status": "active",
+      "applies_to": [
+        "frontend/**/*.e2e.js",
+        "frontend/e2e/**/*"
+      ],
+      "depends_on": [],
+      "related": [],
+      "relationships": {
+        "depends_on": [],
+        "related": []
+      },
+      "checksum": "8994b4c9aa2446c181853c3355161c2b144e9e6572222d21a393604db18a3933"
+    },
+    {
+      "type": "knowledge_ir",
+      "id": "frontend-testing-strategy",
+      "source": "knowledge/frontend/testing/strategy.md",
+      "domain": "frontend",
+      "category": "testing",
+      "kind": "workflow",
+      "content": {
+        "raw": "",
+        "summary": "Strategy",
+        "key_points": [],
+        "sections": [],
+        "code_blocks": []
+      },
+      "activation": {
+        "file_patterns": [
+          "frontend/src/**/*.test.js",
+          "frontend/src/**/*.spec.js",
+          "frontend/src/test/**/*"
+        ],
+        "keywords": [
+          "strategy"
+        ]
+      },
+      "priority": 50,
+      "status": "active",
+      "applies_to": [
+        "frontend/src/**/*.test.js",
+        "frontend/src/**/*.spec.js",
+        "frontend/src/test/**/*"
+      ],
+      "depends_on": [],
+      "related": [],
+      "relationships": {
+        "depends_on": [],
+        "related": []
+      },
+      "checksum": "855d1bfd1ddba5a85f039119f742d032a2e66a6cc328057b7e0de66e2a9162c7"
+    },
+    {
+      "type": "knowledge_ir",
+      "id": "frontend-testing-unit-testing",
+      "source": "knowledge/frontend/testing/unit-testing.md",
+      "domain": "frontend",
+      "category": "testing",
+      "kind": "workflow",
+      "content": {
+        "raw": "",
+        "summary": "Unit Testing",
+        "key_points": [],
+        "sections": [],
+        "code_blocks": []
+      },
+      "activation": {
+        "file_patterns": [
+          "frontend/src/**/*.test.js",
+          "frontend/src/**/*.spec.js",
+          "frontend/src/test/**/*"
+        ],
+        "keywords": [
+          "testing",
+          "unit"
+        ]
+      },
+      "priority": 50,
+      "status": "active",
+      "applies_to": [
+        "frontend/src/**/*.test.js",
+        "frontend/src/**/*.spec.js",
+        "frontend/src/test/**/*"
+      ],
+      "depends_on": [],
+      "related": [],
+      "relationships": {
+        "depends_on": [],
+        "related": []
+      },
+      "checksum": "6006c5ce6c830527acf757e672dc02cc7ac525d746d486ee97a3d2a9fb23432f"
+    },
+    {
+      "type": "knowledge_ir",
+      "id": "frontend-tools-vite",
+      "source": "knowledge/frontend/tools/vite.md",
+      "domain": "frontend",
+      "category": "tools",
+      "kind": "skill",
+      "content": {
+        "raw": "",
+        "summary": "Vite",
+        "key_points": [],
+        "sections": [],
+        "code_blocks": []
+      },
+      "activation": {
+        "file_patterns": [
+          "frontend/vite.config.*",
+          "frontend/package.json"
+        ],
+        "keywords": [
+          "vite"
+        ]
+      },
+      "priority": 50,
+      "status": "active",
+      "applies_to": [
+        "frontend/vite.config.*",
+        "frontend/package.json"
+      ],
+      "depends_on": [],
+      "related": [],
+      "relationships": {
+        "depends_on": [],
+        "related": []
+      },
+      "checksum": "88f7a96f4632ad187a198fb0bbbf6db346cd17999d59e522c6d3bb298b293bb6"
+    },
+    {
+      "type": "knowledge_ir",
+      "id": "frontend-tools-vue",
+      "source": "knowledge/frontend/tools/vue.md",
+      "domain": "frontend",
+      "category": "tools",
+      "kind": "skill",
+      "content": {
+        "raw": "",
+        "summary": "Vue",
+        "key_points": [],
+        "sections": [],
+        "code_blocks": []
+      },
+      "activation": {
+        "file_patterns": [
+          "frontend/src/**/*.vue",
+          "frontend/src/**/*.js"
+        ],
+        "keywords": []
+      },
+      "priority": 50,
+      "status": "active",
+      "applies_to": [
+        "frontend/src/**/*.vue",
+        "frontend/src/**/*.js"
+      ],
+      "depends_on": [],
+      "related": [],
+      "relationships": {
+        "depends_on": [],
+        "related": []
+      },
+      "checksum": "fd1d6ae979625a132bac61be2eb4c0d6a109bea9b82bdd82e735788d3a3e49de"
+    },
+    {
+      "type": "knowledge_ir",
+      "id": "frontend-ui-ux-accessibility",
+      "source": "knowledge/frontend/ui-ux/accessibility.md",
+      "domain": "frontend",
+      "category": "ui-ux",
+      "kind": "rule",
+      "content": {
+        "raw": "",
+        "summary": "Accessibility",
+        "key_points": [],
+        "sections": [],
+        "code_blocks": []
+      },
+      "activation": {
+        "file_patterns": [
+          "frontend/src/**/*.vue",
+          "frontend/src/**/*.js",
+          "frontend/src/**/*.css"
+        ],
+        "keywords": [
+          "accessibility"
+        ]
+      },
+      "priority": 50,
+      "status": "active",
+      "applies_to": [
+        "frontend/src/**/*.vue",
+        "frontend/src/**/*.js",
+        "frontend/src/**/*.css"
+      ],
+      "depends_on": [],
+      "related": [],
+      "relationships": {
+        "depends_on": [],
+        "related": []
+      },
+      "checksum": "c44591b1e6be0910e0a4ea0e6d9f1b2762871b3615804ce259e731ac2cea573f"
+    },
+    {
+      "type": "knowledge_ir",
+      "id": "frontend-ui-ux-interaction-patterns",
+      "source": "knowledge/frontend/ui-ux/interaction-patterns.md",
+      "domain": "frontend",
+      "category": "ui-ux",
+      "kind": "skill",
+      "content": {
+        "raw": "",
+        "summary": "Interaction Patterns",
+        "key_points": [],
+        "sections": [],
+        "code_blocks": []
+      },
+      "activation": {
+        "file_patterns": [
+          "frontend/src/**/*.vue",
+          "frontend/src/**/*.js"
+        ],
+        "keywords": [
+          "interaction",
+          "patterns"
+        ]
+      },
+      "priority": 50,
+      "status": "active",
+      "applies_to": [
+        "frontend/src/**/*.vue",
+        "frontend/src/**/*.js"
+      ],
+      "depends_on": [],
+      "related": [],
+      "relationships": {
+        "depends_on": [],
+        "related": []
+      },
+      "checksum": "351f48a9c27602b877532790160d5f20776e11bd7ec0b9602d360d19b0967881"
+    },
+    {
+      "type": "knowledge_ir",
+      "id": "frontend-ui-ux-responsive-design",
+      "source": "knowledge/frontend/ui-ux/responsive-design.md",
+      "domain": "frontend",
+      "category": "ui-ux",
+      "kind": "skill",
+      "content": {
+        "raw": "",
+        "summary": "Responsive Design",
+        "key_points": [],
+        "sections": [],
+        "code_blocks": []
+      },
+      "activation": {
+        "file_patterns": [
+          "frontend/src/**/*.vue",
+          "frontend/src/**/*.css"
+        ],
+        "keywords": [
+          "design",
+          "responsive"
+        ]
+      },
+      "priority": 50,
+      "status": "active",
+      "applies_to": [
+        "frontend/src/**/*.vue",
+        "frontend/src/**/*.css"
+      ],
+      "depends_on": [],
+      "related": [],
+      "relationships": {
+        "depends_on": [],
+        "related": []
+      },
+      "checksum": "85e860b4ad17a12d51c0fae3571020a73e4594d19b0a668cdcdd33b4c19ecf17"
+    },
+    {
+      "type": "knowledge_ir",
+      "id": "frontend-ui-ux-styling",
+      "source": "knowledge/frontend/ui-ux/styling.md",
+      "domain": "frontend",
+      "category": "ui-ux",
+      "kind": "reference",
+      "content": {
+        "raw": "",
+        "summary": "Styling",
+        "key_points": [],
+        "sections": [],
+        "code_blocks": []
+      },
+      "activation": {
+        "file_patterns": [
+          "frontend/src/**/*.vue",
+          "frontend/src/**/*.css"
+        ],
+        "keywords": [
+          "styling"
+        ]
+      },
+      "priority": 50,
+      "status": "active",
+      "applies_to": [
+        "frontend/src/**/*.vue",
+        "frontend/src/**/*.css"
+      ],
+      "depends_on": [],
+      "related": [],
+      "relationships": {
+        "depends_on": [],
+        "related": []
+      },
+      "checksum": "9fc39af01a29f5c823e5d654169bfa94495a9c5279126e744fd6d5c2af7694f6"
+    },
+    {
+      "type": "knowledge_ir",
+      "id": "frontend-ui-ux-user-feedback",
+      "source": "knowledge/frontend/ui-ux/user-feedback.md",
+      "domain": "frontend",
+      "category": "ui-ux",
+      "kind": "skill",
+      "content": {
+        "raw": "",
+        "summary": "User Feedback",
+        "key_points": [],
+        "sections": [],
+        "code_blocks": []
+      },
+      "activation": {
+        "file_patterns": [
+          "frontend/src/**/*.vue",
+          "frontend/src/**/*.js"
+        ],
+        "keywords": [
+          "user",
+          "feedback"
+        ]
+      },
+      "priority": 50,
+      "status": "active",
+      "applies_to": [
+        "frontend/src/**/*.vue",
+        "frontend/src/**/*.js"
+      ],
+      "depends_on": [],
+      "related": [],
+      "relationships": {
+        "depends_on": [],
+        "related": []
+      },
+      "checksum": "5bd6dc763d9c617648d8a37d674c3b320c6038c2056fb073656aec1b09808606"
+    },
+    {
+      "type": "knowledge_ir",
+      "id": "shared-code-quality-baseline",
+      "source": "knowledge/shared/code-quality-baseline.md",
+      "domain": "shared",
+      "category": "code-quality-baseline.mdc",
+      "kind": "rule",
+      "content": {
+        "raw": "",
+        "summary": "Code Quality Baseline",
+        "key_points": [],
+        "sections": [],
+        "code_blocks": []
+      },
+      "activation": {
+        "file_patterns": [],
+        "keywords": [
+          "baseline",
+          "quality",
+          "code"
+        ]
+      },
+      "priority": 80,
+      "status": "active",
+      "applies_to": [],
+      "depends_on": [],
+      "related": [],
+      "relationships": {
+        "depends_on": [],
+        "related": []
+      },
+      "checksum": "0de1a599c3dd54afd44e3fc180df64ce382c2de5ccc3349322725a0edea49c38"
+    },
+    {
+      "type": "knowledge_ir",
+      "id": "shared-documentation-sync-policy",
+      "source": "knowledge/shared/documentation-sync-policy.md",
+      "domain": "shared",
+      "category": "documentation-sync-policy.mdc",
+      "kind": "policy",
+      "content": {
+        "raw": "",
+        "summary": "Documentation Sync Policy",
+        "key_points": [],
+        "sections": [],
+        "code_blocks": []
+      },
+      "activation": {
+        "file_patterns": [
+          "backend/**/*.py",
+          "frontend/src/**/*.{js,ts,vue}",
+          "shared/**/*.{js,ts}",
+          "docs/**/*.md",
+          "**/*README*.md",
+          "**/*TODO*.md",
+          "**/*PLAN*.md"
+        ],
+        "keywords": [
+          "documentation",
+          "policy",
+          "sync"
+        ]
+      },
+      "priority": 50,
+      "status": "active",
+      "applies_to": [
+        "backend/**/*.py",
+        "frontend/src/**/*.{js,ts,vue}",
+        "shared/**/*.{js,ts}",
+        "docs/**/*.md",
+        "**/*README*.md",
+        "**/*TODO*.md",
+        "**/*PLAN*.md"
+      ],
+      "depends_on": [],
+      "related": [],
+      "relationships": {
+        "depends_on": [],
+        "related": []
+      },
+      "checksum": "add1fb7d450293f4369d4e8326f61a04786557f218d75f1754702b00725970e2"
+    },
+    {
+      "type": "knowledge_ir",
+      "id": "shared-engineering-principles",
+      "source": "knowledge/shared/engineering-principles.md",
+      "domain": "shared",
+      "category": "engineering-principles.mdc",
+      "kind": "principle",
+      "content": {
+        "raw": "",
+        "summary": "Engineering Principles",
+        "key_points": [],
+        "sections": [],
+        "code_blocks": []
+      },
+      "activation": {
+        "file_patterns": [],
+        "keywords": [
+          "engineering",
+          "principles"
+        ]
+      },
+      "priority": 80,
+      "status": "active",
+      "applies_to": [],
+      "depends_on": [],
+      "related": [],
+      "relationships": {
+        "depends_on": [],
+        "related": []
+      },
+      "checksum": "cce5c5f6d1473a03d6a197aa99ae226760964405b9f05cf57c6a454d3303653d"
+    },
+    {
+      "type": "knowledge_ir",
+      "id": "shared-git-workflow",
+      "source": "knowledge/shared/git-workflow.md",
+      "domain": "shared",
+      "category": "git-workflow.mdc",
+      "kind": "workflow",
+      "content": {
+        "raw": "",
+        "summary": "Git Workflow",
+        "key_points": [],
+        "sections": [],
+        "code_blocks": []
+      },
+      "activation": {
+        "file_patterns": [
+          "backend/**/*",
+          ".github/**/*"
+        ],
+        "keywords": [
+          "workflow"
+        ]
+      },
+      "priority": 50,
+      "status": "active",
+      "applies_to": [
+        "backend/**/*",
+        ".github/**/*"
+      ],
+      "depends_on": [],
+      "related": [],
+      "relationships": {
+        "depends_on": [],
+        "related": []
+      },
+      "checksum": "fd31f1308cb3bc8baa49ecb161370af5d05e48e219e4bbc87439f037b936a5eb"
+    },
+    {
+      "type": "knowledge_ir",
+      "id": "shared-gitflow-branch-policy",
+      "source": "knowledge/shared/gitflow-branch-policy.md",
+      "domain": "shared",
+      "category": "gitflow-branch-policy.mdc",
+      "kind": "workflow",
+      "content": {
+        "raw": "",
+        "summary": "Gitflow Branch Policy",
+        "key_points": [],
+        "sections": [],
+        "code_blocks": []
+      },
+      "activation": {
+        "file_patterns": [],
+        "keywords": [
+          "gitflow",
+          "branch",
+          "policy"
+        ]
+      },
+      "priority": 80,
+      "status": "active",
+      "applies_to": [],
+      "depends_on": [],
+      "related": [],
+      "relationships": {
+        "depends_on": [],
+        "related": []
+      },
+      "checksum": "7efe28cb6a7ed96d05652c1ad4bd77c262e1e5955d31c2d58ad20a5d31d6bbe5"
+    },
+    {
+      "type": "knowledge_ir",
+      "id": "shared-gitguardian-secrets-policy",
+      "source": "knowledge/shared/gitguardian-secrets-policy.md",
+      "domain": "shared",
+      "category": "gitguardian-secrets-policy.mdc",
+      "kind": "policy",
+      "content": {
+        "raw": "",
+        "summary": "Gitguardian Secrets Policy",
+        "key_points": [],
+        "sections": [],
+        "code_blocks": []
+      },
+      "activation": {
+        "file_patterns": [
+          "backend/**/*.py",
+          "frontend/src/**/*.{js,ts,vue}",
+          "shared/**/*.{js,ts}"
+        ],
+        "keywords": [
+          "gitguardian",
+          "secrets",
+          "policy"
+        ]
+      },
+      "priority": 50,
+      "status": "active",
+      "applies_to": [
+        "backend/**/*.py",
+        "frontend/src/**/*.{js,ts,vue}",
+        "shared/**/*.{js,ts}"
+      ],
+      "depends_on": [],
+      "related": [],
+      "relationships": {
+        "depends_on": [],
+        "related": []
+      },
+      "checksum": "9b0cca8fab32ecaa840d4d433f71e9515bb85383b52db83a8f1148ed8f8f98f2"
+    },
+    {
+      "type": "knowledge_ir",
+      "id": "shared-offline-no-cdn-policy",
+      "source": "knowledge/shared/offline-no-cdn-policy.md",
+      "domain": "shared",
+      "category": "offline-no-cdn-policy.mdc",
+      "kind": "policy",
+      "content": {
+        "raw": "",
+        "summary": "Offline No Cdn Policy",
+        "key_points": [],
+        "sections": [],
+        "code_blocks": []
+      },
+      "activation": {
+        "file_patterns": [
+          "frontend/**/*.html",
+          "frontend/**/*.vue",
+          "frontend/**/*.css",
+          "frontend/**/*.js"
+        ],
+        "keywords": [
+          "offline",
+          "policy"
+        ]
+      },
+      "priority": 50,
+      "status": "active",
+      "applies_to": [
+        "frontend/**/*.html",
+        "frontend/**/*.vue",
+        "frontend/**/*.css",
+        "frontend/**/*.js"
+      ],
+      "depends_on": [],
+      "related": [],
+      "relationships": {
+        "depends_on": [],
+        "related": []
+      },
+      "checksum": "f13b98a82839f40a22a302965fa7b15c04e7c76d3cfc929a6d2a5aca8d90e160"
+    },
+    {
+      "type": "knowledge_ir",
+      "id": "shared-python-venv-policy",
+      "source": "knowledge/shared/python-venv-policy.md",
+      "domain": "shared",
+      "category": "python-venv-policy.mdc",
+      "kind": "policy",
+      "content": {
+        "raw": "",
+        "summary": "Python Venv Policy",
+        "key_points": [],
+        "sections": [],
+        "code_blocks": []
+      },
+      "activation": {
+        "file_patterns": [],
+        "keywords": [
+          "venv",
+          "python",
+          "policy"
+        ]
+      },
+      "priority": 80,
+      "status": "active",
+      "applies_to": [],
+      "depends_on": [],
+      "related": [],
+      "relationships": {
+        "depends_on": [],
+        "related": []
+      },
+      "checksum": "7bb7a5b74a1cb51b70e4323959640ef91a2d55ba7f9d403e32b35c6d77cc435f"
+    },
+    {
+      "type": "knowledge_ir",
+      "id": "shared-rule-authoring-standard",
+      "source": "knowledge/shared/rule-authoring-standard.md",
+      "domain": "shared",
+      "category": "rule-authoring-standard.mdc",
+      "kind": "rule",
+      "content": {
+        "raw": "",
+        "summary": "Rule Authoring Standard",
+        "key_points": [],
+        "sections": [],
+        "code_blocks": []
+      },
+      "activation": {
+        "file_patterns": [
+          ".cursor/rules/**/*.mdc",
+          ".cursor/rules/**/*.md"
+        ],
+        "keywords": [
+          "rule",
+          "authoring",
+          "standard"
+        ]
+      },
+      "priority": 50,
+      "status": "active",
+      "applies_to": [
+        ".cursor/rules/**/*.mdc",
+        ".cursor/rules/**/*.md"
+      ],
+      "depends_on": [],
+      "related": [],
+      "relationships": {
+        "depends_on": [],
+        "related": []
+      },
+      "checksum": "f4c9790777de48c06842819a13bd771f05d72a572c960a8a4a7eabedc70cb5cd"
+    },
+    {
+      "type": "knowledge_ir",
+      "id": "shared-rule-precedence",
+      "source": "knowledge/shared/rule-precedence.md",
+      "domain": "shared",
+      "category": "rule-precedence.mdc",
+      "kind": "rule",
+      "content": {
+        "raw": "",
+        "summary": "Rule Precedence",
+        "key_points": [],
+        "sections": [],
+        "code_blocks": []
+      },
+      "activation": {
+        "file_patterns": [],
+        "keywords": [
+          "rule",
+          "precedence"
+        ]
+      },
+      "priority": 80,
+      "status": "active",
+      "applies_to": [],
+      "depends_on": [],
+      "related": [],
+      "relationships": {
+        "depends_on": [],
+        "related": []
+      },
+      "checksum": "4277016bbc650561060c2c1ad136d18cab6d75a6c303906b0eadcc6a3f2ef42c"
+    },
+    {
+      "type": "knowledge_ir",
+      "id": "shared-rules-audit-checklist",
+      "source": "knowledge/shared/rules-audit-checklist.md",
+      "domain": "shared",
+      "category": "rules-audit-checklist.mdc",
+      "kind": "workflow",
+      "content": {
+        "raw": "",
+        "summary": "Rules Audit Checklist",
+        "key_points": [],
+        "sections": [],
+        "code_blocks": []
+      },
+      "activation": {
+        "file_patterns": [
+          ".cursor/rules/**/*.mdc",
+          ".cursor/rules/**/*.md"
+        ],
+        "keywords": [
+          "audit",
+          "checklist",
+          "rules"
+        ]
+      },
+      "priority": 50,
+      "status": "active",
+      "applies_to": [
+        ".cursor/rules/**/*.mdc",
+        ".cursor/rules/**/*.md"
+      ],
+      "depends_on": [],
+      "related": [],
+      "relationships": {
+        "depends_on": [],
+        "related": []
+      },
+      "checksum": "95058ec3f245efd2ca2beb0d825d86cf267794f11c957c219e4928a457e5b72b"
+    }
+  ],
+  "capabilities": [
+    {
+      "type": "capability_ir",
+      "id": "api-design",
+      "name": "API Design",
+      "description": "Capability for designing REST APIs.",
+      "domain": "backend",
+      "category": "api",
+      "requires": [
+        "backend-development"
+      ],
+      "provides": [],
+      "priority": 80,
+      "tags": [
+        "api",
+        "rest",
+        "drf"
+      ]
+    },
+    {
+      "type": "capability_ir",
+      "id": "backend-development",
+      "name": "Backend Development",
+      "description": "Capability for backend system implementation with Django and DRF.",
+      "domain": "backend",
+      "category": "development",
+      "requires": [],
+      "provides": [
+        "api-design",
+        "database-modeling"
+      ],
+      "priority": 90,
+      "tags": [
+        "django",
+        "drf",
+        "api",
+        "backend"
+      ]
+    },
+    {
+      "type": "capability_ir",
+      "id": "database-modeling",
+      "name": "Database Modeling",
+      "description": "Capability for Django ORM model design.",
+      "domain": "backend",
+      "category": "database",
+      "requires": [
+        "backend-development"
+      ],
+      "provides": [],
+      "priority": 80,
+      "tags": [
+        "database",
+        "orm",
+        "django",
+        "models"
+      ]
+    },
+    {
+      "type": "capability_ir",
+      "id": "component-design",
+      "name": "Component Design",
+      "description": "Capability for designing Vue components.",
+      "domain": "frontend",
+      "category": "components",
+      "requires": [
+        "frontend-development"
+      ],
+      "provides": [],
+      "priority": 80,
+      "tags": [
+        "vue",
+        "components",
+        "design"
+      ]
+    },
+    {
+      "type": "capability_ir",
+      "id": "frontend-development",
+      "name": "Frontend Development",
+      "description": "Capability for frontend implementation with Vue 3 and Pinia.",
+      "domain": "frontend",
+      "category": "development",
+      "requires": [],
+      "provides": [
+        "component-design",
+        "state-management"
+      ],
+      "priority": 90,
+      "tags": [
+        "vue",
+        "pinia",
+        "ui",
+        "frontend"
+      ]
+    },
+    {
+      "type": "capability_ir",
+      "id": "state-management",
+      "name": "State Management",
+      "description": "Capability for implementing Pinia state management.",
+      "domain": "frontend",
+      "category": "state",
+      "requires": [
+        "frontend-development"
+      ],
+      "provides": [],
+      "priority": 75,
+      "tags": [
+        "pinia",
+        "state",
+        "vue"
+      ]
+    },
+    {
+      "type": "capability_ir",
+      "id": "ui-architecture",
+      "name": "UI Architecture",
+      "description": "Capability for UI/UX architecture decisions.",
+      "domain": "frontend",
+      "category": "architecture",
+      "requires": [
+        "system-design"
+      ],
+      "provides": [
+        "component-design"
+      ],
+      "priority": 85,
+      "tags": [
+        "ui",
+        "ux",
+        "architecture",
+        "design"
+      ]
+    },
+    {
+      "type": "capability_ir",
+      "id": "vue-development",
+      "name": "Vue Development",
+      "description": "Capability for Vue 3 development.",
+      "domain": "frontend",
+      "category": "development",
+      "requires": [
+        "frontend-development"
+      ],
+      "provides": [
+        "component-design",
+        "state-management"
+      ],
+      "priority": 85,
+      "tags": [
+        "vue",
+        "vue3",
+        "frontend"
+      ]
+    },
+    {
+      "type": "capability_ir",
+      "id": "accessibility-audit",
+      "name": "Accessibility Audit",
+      "description": "Capability for accessibility validation.",
+      "domain": "shared",
+      "category": "accessibility",
+      "requires": [],
+      "provides": [],
+      "priority": 75,
+      "tags": [
+        "accessibility",
+        "a11y",
+        "wcag"
+      ]
+    },
+    {
+      "type": "capability_ir",
+      "id": "code-review",
+      "name": "Code Review",
+      "description": "Capability for reviewing code for quality, security, and standards compliance.",
+      "domain": "shared",
+      "category": "quality",
+      "requires": [],
+      "provides": [],
+      "priority": 85,
+      "tags": [
+        "review",
+        "quality",
+        "security",
+        "standards"
+      ]
+    },
+    {
+      "type": "capability_ir",
+      "id": "security-audit",
+      "name": "Security Audit",
+      "description": "Capability for security validation and audit.",
+      "domain": "shared",
+      "category": "security",
+      "requires": [],
+      "provides": [],
+      "priority": 80,
+      "tags": [
+        "security",
+        "audit",
+        "vulnerability"
+      ]
+    },
+    {
+      "type": "capability_ir",
+      "id": "system-design",
+      "name": "System Design",
+      "description": "Capability for architectural design and system-level decisions.",
+      "domain": "shared",
+      "category": "architecture",
+      "requires": [],
+      "provides": [
+        "backend-development",
+        "frontend-development"
+      ],
+      "priority": 95,
+      "tags": [
+        "architecture",
+        "design",
+        "system"
+      ]
+    }
+  ],
+  "agents": {
+    "architect": {
+      "type": "agent_ir",
+      "id": "architect",
+      "name": "architect",
+      "display_name": "Architect Agent",
+      "description": "System architecture authority responsible for cross-domain design decisions and architectural governance.",
+      "role": "System architecture authority responsible for system design decisions, architectural governance, cross-domain consistency, technology strategy, and resolving architectural conflicts.",
+      "domains": [
+        "backend",
+        "frontend",
+        "shared"
+      ],
+      "skills": [],
+      "workflows": [
+        "backend-api-flow",
+        "frontend-feature-flow"
+      ],
+      "blueprints": [
+        "backend-architecture-django-architecture",
+        "frontend-architecture-atomic-design",
+        "frontend-architecture-component-design",
+        "frontend-architecture-project-structure",
+        "frontend-architecture-separation-of-concerns"
+      ],
+      "bundles": [],
+      "capabilities": [
+        "system-design"
+      ],
+      "permissions": {
+        "shell": false,
+        "edit": false,
+        "read": true,
+        "network": false,
+        "planning": "optional",
+        "review": "optional",
+        "testing": "optional"
+      },
+      "behavior": {
+        "planning": "required",
+        "testing": "preferred",
+        "review_style": "balanced",
+        "response_format": "normal"
+      },
+      "authority": {
+        "level": "senior",
+        "can_delegate": true,
+        "escalation_path": []
+      },
+      "routing": {
+        "priority": 100,
+        "match_domains": [
+          "backend",
+          "frontend",
+          "shared"
+        ],
+        "match_patterns": [
+          "**/*.py",
+          "**/*.ts",
+          "**/*.tsx",
+          "**/*.vue"
+        ]
+      },
+      "metadata": {
+        "created_at": "2026-06-07T19:00:00Z",
+        "updated_at": "2026-06-07T19:00:00Z"
+      }
+    },
+    "backend": {
+      "type": "agent_ir",
+      "id": "backend",
+      "name": "backend",
+      "display_name": "Backend Engineer Agent",
+      "description": "Backend execution agent responsible for Django, APIs, database, and backend system implementation.",
+      "role": "Responsible for implementing and maintaining backend systems including Django architecture, REST APIs, database models, performance, logging, monitoring, testing, and security.",
+      "domains": [
+        "backend",
+        "shared"
+      ],
+      "skills": [],
+      "workflows": [
+        "backend-api-flow"
+      ],
+      "blueprints": [
+        "backend-architecture-django-architecture"
+      ],
+      "bundles": [
+        "backend-foundation"
+      ],
+      "capabilities": [
+        "backend-development",
+        "api-design",
+        "database-modeling"
+      ],
+      "permissions": {
+        "shell": false,
+        "edit": true,
+        "read": true,
+        "network": false,
+        "planning": "optional",
+        "review": "optional",
+        "testing": "optional"
+      },
+      "behavior": {
+        "planning": "preferred",
+        "testing": "required",
+        "review_style": "balanced",
+        "response_format": "normal"
+      },
+      "authority": {
+        "level": "mid",
+        "can_delegate": false,
+        "escalation_path": [
+          "architect"
+        ]
+      },
+      "routing": {
+        "priority": 80,
+        "match_domains": [
+          "backend"
+        ],
+        "match_patterns": [
+          "backend/**/*.py"
+        ]
+      },
+      "metadata": {
+        "created_at": "2026-06-07T19:00:00Z",
+        "updated_at": "2026-06-07T19:00:00Z"
+      }
+    },
+    "frontend": {
+      "type": "agent_ir",
+      "id": "frontend",
+      "name": "frontend",
+      "display_name": "Frontend Engineer Agent",
+      "description": "Frontend execution agent responsible for Vue 3 UI, state management, UX, and frontend architecture.",
+      "role": "Responsible for implementing UI and frontend architecture including Vue components, Pinia state management, UX/UI, responsiveness, accessibility, API integration, and performance optimization.",
+      "domains": [
+        "frontend",
+        "shared"
+      ],
+      "skills": [],
+      "workflows": [
+        "frontend-feature-flow"
+      ],
+      "blueprints": [
+        "frontend-architecture-atomic-design",
+        "frontend-architecture-component-design",
+        "frontend-architecture-project-structure",
+        "frontend-architecture-separation-of-concerns"
+      ],
+      "bundles": [
+        "frontend-foundation"
+      ],
+      "capabilities": [
+        "frontend-development",
+        "component-design",
+        "state-management",
+        "ui-architecture",
+        "vue-development"
+      ],
+      "permissions": {
+        "shell": false,
+        "edit": true,
+        "read": true,
+        "network": false,
+        "planning": "optional",
+        "review": "optional",
+        "testing": "optional"
+      },
+      "behavior": {
+        "planning": "preferred",
+        "testing": "preferred",
+        "review_style": "balanced",
+        "response_format": "normal"
+      },
+      "authority": {
+        "level": "mid",
+        "can_delegate": false,
+        "escalation_path": [
+          "architect"
+        ]
+      },
+      "routing": {
+        "priority": 80,
+        "match_domains": [
+          "frontend"
+        ],
+        "match_patterns": [
+          "frontend/**/*.vue",
+          "frontend/**/*.ts",
+          "frontend/**/*.tsx"
+        ]
+      },
+      "metadata": {
+        "created_at": "2026-06-07T19:00:00Z",
+        "updated_at": "2026-06-07T19:00:00Z"
+      }
+    },
+    "reviewer": {
+      "type": "agent_ir",
+      "id": "reviewer",
+      "name": "reviewer",
+      "display_name": "Reviewer Agent",
+      "description": "Quality enforcement agent responsible for security, consistency, and engineering standards validation.",
+      "role": "Responsible for code review, policy enforcement, security validation, architectural consistency checks, and ensuring compliance with engineering standards.",
+      "domains": [
+        "backend",
+        "frontend",
+        "shared"
+      ],
+      "skills": [],
+      "workflows": [
+        "backend-api-flow",
+        "frontend-feature-flow"
+      ],
+      "blueprints": [
+        "backend-architecture-django-architecture",
+        "frontend-architecture-atomic-design",
+        "frontend-architecture-component-design",
+        "frontend-architecture-project-structure",
+        "frontend-architecture-separation-of-concerns"
+      ],
+      "bundles": [
+        "engineering-foundation"
+      ],
+      "capabilities": [
+        "code-review",
+        "security-audit",
+        "accessibility-audit"
+      ],
+      "permissions": {
+        "shell": false,
+        "edit": false,
+        "read": true,
+        "network": false,
+        "planning": "optional",
+        "review": "optional",
+        "testing": "optional"
+      },
+      "behavior": {
+        "planning": "none",
+        "testing": "preferred",
+        "review_style": "strict",
+        "response_format": "low"
+      },
+      "authority": {
+        "level": "senior",
+        "can_delegate": true,
+        "escalation_path": [
+          "architect"
+        ]
+      },
+      "routing": {
+        "priority": 90,
+        "match_domains": [
+          "backend",
+          "frontend",
+          "shared"
+        ],
+        "match_patterns": [
+          "**/*.py",
+          "**/*.ts",
+          "**/*.tsx",
+          "**/*.vue"
+        ]
+      },
+      "metadata": {
+        "created_at": "2026-06-07T19:00:00Z",
+        "updated_at": "2026-06-07T19:00:00Z"
+      }
+    }
+  },
+  "workflows": [
+    {
+      "type": "workflow_ir",
+      "id": "backend-api-flow",
+      "name": "Backend REST API Implementation",
+      "description": "Standard workflow for implementing backend REST APIs with Django and DRF.",
+      "domain": "backend",
+      "category": "api",
+      "stages": [
+        {
+          "id": "architecture",
+          "name": "Architecture Design",
+          "agent": "architect",
+          "depends_on": [],
+          "required_knowledge": [
+            "backend-architecture-django-architecture",
+            "backend-api-rest"
+          ],
+          "required_capabilities": [
+            "system-design"
+          ],
+          "status": "pending"
+        },
+        {
+          "id": "implementation",
+          "name": "Implementation",
+          "agent": "backend",
+          "depends_on": [
+            "architecture"
+          ],
+          "required_knowledge": [
+            "backend-api-rest",
+            "backend-database-models",
+            "backend-performance-optimization"
+          ],
+          "required_capabilities": [
+            "django-development",
+            "api-design"
+          ],
+          "status": "pending"
+        },
+        {
+          "id": "review",
+          "name": "Code Review",
+          "agent": "reviewer",
+          "depends_on": [
+            "implementation"
+          ],
+          "required_knowledge": [
+            "backend-security-security",
+            "backend-patterns-anti-patterns"
+          ],
+          "required_capabilities": [
+            "code-review",
+            "security-audit"
+          ],
+          "status": "pending"
+        }
+      ],
+      "triggers": [
+        "rest\\s?api",
+        "endpoint",
+        "crud",
+        "django",
+        "api"
+      ],
+      "agents": [
+        "architect",
+        "backend",
+        "reviewer"
+      ],
+      "capabilities_required": [
+        "backend-development",
+        "code-review"
+      ],
+      "priority": 80
+    },
+    {
+      "type": "workflow_ir",
+      "id": "frontend-feature-flow",
+      "name": "Frontend Feature Development",
+      "description": "Standard workflow for implementing frontend features with Vue 3 and Pinia.",
+      "domain": "frontend",
+      "category": "feature",
+      "stages": [
+        {
+          "id": "design",
+          "name": "Design & Architecture",
+          "agent": "architect",
+          "depends_on": [],
+          "required_knowledge": [
+            "frontend-architecture-atomic-design",
+            "frontend-architecture-component-design"
+          ],
+          "required_capabilities": [
+            "system-design",
+            "ui-architecture"
+          ],
+          "status": "pending"
+        },
+        {
+          "id": "implementation",
+          "name": "Implementation",
+          "agent": "frontend",
+          "depends_on": [
+            "design"
+          ],
+          "required_knowledge": [
+            "frontend-patterns-component-patterns",
+            "frontend-state-pinia",
+            "frontend-ui-ux-responsive-design"
+          ],
+          "required_capabilities": [
+            "vue-development",
+            "state-management"
+          ],
+          "status": "pending"
+        },
+        {
+          "id": "review",
+          "name": "Code Review",
+          "agent": "reviewer",
+          "depends_on": [
+            "implementation"
+          ],
+          "required_knowledge": [
+            "frontend-performance-core-web-vitals",
+            "frontend-ui-ux-user-feedback"
+          ],
+          "required_capabilities": [
+            "code-review",
+            "accessibility-audit"
+          ],
+          "status": "pending"
+        }
+      ],
+      "triggers": [
+        "vue",
+        "component",
+        "pinia",
+        "ui/ux",
+        "frontend"
+      ],
+      "agents": [
+        "architect",
+        "frontend",
+        "reviewer"
+      ],
+      "capabilities_required": [
+        "frontend-development",
+        "code-review"
+      ],
+      "priority": 80
+    }
+  ],
+  "routes": [],
+  "contracts": []
+}
