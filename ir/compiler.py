@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import re
+import hashlib
 from datetime import datetime, timezone
 from typing import Dict, List, Any, Optional
 
@@ -31,6 +32,13 @@ def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def _deterministic_timestamp(source_hash: str) -> str:
+    if not source_hash:
+        return _now_iso()
+    seed = int(hashlib.sha256(source_hash.encode()).hexdigest()[:8], 16)
+    return datetime.fromtimestamp(1700000000 + seed % 31536000, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
 def _extract_key_points(text: str, max_items: int = 20) -> List[str]:
     return [line.strip() for line in text.split("\n")
             if line.strip().startswith(("- ", "✅", "❌", "**"))][:max_items]
@@ -45,8 +53,8 @@ def _extract_code_blocks(text: str, max_items: int = 10) -> List[str]:
 
 
 def _extract_keywords(text: str, max_items: int = 20) -> List[str]:
-    words = set(word.lower() for word in text.split() if len(word) > 3)
-    return list(words)[:max_items]
+    words = sorted(set(word.lower() for word in text.split() if len(word) > 3))
+    return words[:max_items]
 
 
 def _build_content(raw: str, summary: str) -> Content:
@@ -106,7 +114,10 @@ class IRCompiler:
         self.contracts = contracts or {}
         self.knowledge_raw = knowledge_raw or {}
 
-    def compile(self, source_hash: str = "") -> IRRoot:
+    def compile(self, source_hash: str = "", generated_at: str = "") -> IRRoot:
+        if not generated_at:
+            generated_at = _deterministic_timestamp(source_hash)
+
         knowledge_nodes = self._compile_knowledge()
         capability_nodes = self._compile_capabilities()
         agent_nodes = self._compile_agents(knowledge_nodes, capability_nodes)
@@ -116,7 +127,7 @@ class IRCompiler:
 
         return IRRoot(
             version="2.0",
-            generated_at=_now_iso(),
+            generated_at=generated_at,
             source_hash=source_hash,
             knowledge=knowledge_nodes,
             capabilities=capability_nodes,

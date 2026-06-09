@@ -31,6 +31,8 @@ def load_knowledge_raw(index: Dict[str, Any], knowledge_dir: Path) -> Dict[str, 
         rel_path = doc.get("path", "")
         if not rel_path:
             continue
+        if rel_path.startswith("knowledge/"):
+            rel_path = rel_path[len("knowledge/"):]
         full_path = knowledge_dir / rel_path
         if full_path.exists():
             raw_map[doc_id] = full_path.read_text(encoding="utf-8")
