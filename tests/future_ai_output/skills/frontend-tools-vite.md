@@ -3,7 +3,7 @@ id: frontend-tools-vite
 kind: skill
 domain: frontend
 category: tools
-generated_at: 2026-06-09T20:12:15.495023+00:00
+generated_at: 2026-06-10T16:55:23.979693+00:00
 ---
 
 # Vite

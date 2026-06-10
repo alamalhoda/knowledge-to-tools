@@ -3,7 +3,7 @@ id: frontend-performance-bundle-size
 kind: rule
 domain: frontend
 category: performance
-generated_at: 2026-06-09T20:12:15.489330+00:00
+generated_at: 2026-06-10T16:55:23.976522+00:00
 ---
 
 # Bundle Size

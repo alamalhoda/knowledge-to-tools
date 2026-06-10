@@ -1,8 +1,9 @@
+from __future__ import annotations
+
 import fnmatch
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Union
 
-
-KIND_WEIGHT: Dict[str, int] = {
+_KIND_WEIGHT: Dict[str, int] = {
     "architecture": 45,
     "rule": 35,
     "policy": 30,
@@ -28,7 +29,9 @@ class RoutingContext:
 
 
 class KnowledgeRouter:
-    def __init__(self, ir_data: Dict[str, Any]) -> None:
+    def __init__(self, ir_data: Union[Dict[str, Any], SerializedIRPayload]) -> None:
+        if isinstance(ir_data, SerializedIRPayload):
+            ir_data = ir_data.to_dict()
         self.knowledge = ir_data.get("knowledge", [])
         self.agents = ir_data.get("agents", {})
 
@@ -42,7 +45,7 @@ class KnowledgeRouter:
             if any(fnmatch.fnmatch(f, pattern) for f in context.files):
                 score += 50
 
-        score += KIND_WEIGHT.get(doc.get("kind"), 0)
+        score += _KIND_WEIGHT.get(doc.get("kind"), 0)
         score += doc.get("priority", 0)
 
         keywords = doc.get("activation", {}).get("keywords", [])
@@ -99,3 +102,14 @@ class KnowledgeRouter:
                 "files": context.files[:5]
             }
         }
+
+
+_KIND_WEIGHT: Dict[str, int] = {
+    "architecture": 45,
+    "rule": 35,
+    "policy": 30,
+    "principle": 25,
+    "workflow": 25,
+    "skill": 20,
+    "reference": 10
+}

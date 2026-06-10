@@ -3,7 +3,7 @@ id: frontend-patterns-component-patterns
 kind: skill
 domain: frontend
 category: patterns
-generated_at: 2026-06-09T20:12:15.487227+00:00
+generated_at: 2026-06-10T16:55:23.975601+00:00
 ---
 
 # Component Patterns

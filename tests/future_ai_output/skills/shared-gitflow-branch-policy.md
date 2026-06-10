@@ -3,7 +3,7 @@ id: shared-gitflow-branch-policy
 kind: workflow
 domain: shared
 category: gitflow-branch-policy.mdc
-generated_at: 2026-06-09T20:12:15.500764+00:00
+generated_at: 2026-06-10T16:55:23.988209+00:00
 ---
 
 # Gitflow Branch Policy

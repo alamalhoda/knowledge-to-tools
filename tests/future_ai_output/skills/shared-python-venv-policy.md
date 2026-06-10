@@ -3,7 +3,7 @@ id: shared-python-venv-policy
 kind: policy
 domain: shared
 category: python-venv-policy.mdc
-generated_at: 2026-06-09T20:12:15.501554+00:00
+generated_at: 2026-06-10T16:55:23.989009+00:00
 ---
 
 # Python Venv Policy

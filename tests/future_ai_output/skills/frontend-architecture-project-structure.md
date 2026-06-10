@@ -3,7 +3,7 @@ id: frontend-architecture-project-structure
 kind: architecture
 domain: frontend
 category: architecture
-generated_at: 2026-06-09T20:12:15.481455+00:00
+generated_at: 2026-06-10T16:55:23.973683+00:00
 ---
 
 # Project Structure

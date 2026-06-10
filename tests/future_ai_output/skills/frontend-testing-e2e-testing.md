@@ -3,7 +3,7 @@ id: frontend-testing-e2e-testing
 kind: workflow
 domain: frontend
 category: testing
-generated_at: 2026-06-09T20:12:15.493330+00:00
+generated_at: 2026-06-10T16:55:23.978778+00:00
 ---
 
 # E2E Testing

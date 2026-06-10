@@ -3,7 +3,7 @@ id: backend-performance-optimization
 kind: rule
 domain: backend
 category: performance
-generated_at: 2026-06-09T20:12:15.478379+00:00
+generated_at: 2026-06-10T16:55:23.956566+00:00
 ---
 
 # Optimization

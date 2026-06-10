@@ -4,7 +4,7 @@ name: architect
 displayName: Architect Agent
 description: System architecture authority responsible for cross-domain design decisions and architectural governance.
 role: System architecture authority responsible for system design decisions, architectural governance, cross-domain consistency, technology strategy, and resolving architectural conflicts.
-generated_at: 2026-06-09T20:12:15.469152+00:00
+generated_at: 2026-06-10T16:55:23.941656+00:00
 ---
 
 # Architect Agent

@@ -3,7 +3,7 @@ id: frontend-state-pinia
 kind: skill
 domain: frontend
 category: state
-generated_at: 2026-06-09T20:12:15.492906+00:00
+generated_at: 2026-06-10T16:55:23.978574+00:00
 ---
 
 # Pinia

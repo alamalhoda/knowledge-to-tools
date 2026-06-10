@@ -1,7 +1,11 @@
 import uuid
 import re
 from datetime import datetime
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Union
+
+from ai.ir.runtime_payload import SerializedIRPayload
+from ai.runtime.runtime_adapter import payload_to_runtime_dict
+
 
 class PlanningEngine:
     """
@@ -10,7 +14,9 @@ class PlanningEngine:
     and step-level knowledge binding.
     """
 
-    def __init__(self, ir_data: Optional[Dict] = None):
+    def __init__(self, ir_data: Optional[Union[Dict[str, Any], SerializedIRPayload]] = None):
+        if isinstance(ir_data, SerializedIRPayload):
+            ir_data = payload_to_runtime_dict(ir_data)
         self.ir = ir_data or {}
         self.workflows = self._load_workflows()
 

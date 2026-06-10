@@ -3,7 +3,7 @@ id: frontend-architecture-component-design
 kind: architecture
 domain: frontend
 category: architecture
-generated_at: 2026-06-09T20:12:15.480293+00:00
+generated_at: 2026-06-10T16:55:23.970271+00:00
 ---
 
 # Component Design

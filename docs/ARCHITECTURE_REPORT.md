@@ -48,6 +48,10 @@
 ### Pipeline Formalization
 - Updated `.ai/pipeline/generate.py` to use formal IR pipeline
 - Pipeline: Knowledge → IR Compiler → IR Validator → Emitters → Outputs
+- `IRRoot` is the canonical compiled artifact
+- `SerializedIRPayload` is the runtime-safe representation derived from `IRRoot`
+- `Runtime` engines consume `SerializedIRPayload` exclusively
+- Emitters continue to consume `IRRoot` directly
 
 ### Snapshot Testing
 - Created `.ai/tests/test_ir_snapshots.py`
@@ -109,6 +113,10 @@
 - `.ai/agents/backend.json`
 - `.ai/agents/frontend.json`
 - `.ai/agents/reviewer.json`
+
+### Serialization Contract
+- `.ai/ir/runtime_payload.py`
+- `.ai/runtime/runtime_adapter.py`
 
 ## 4. Architectural Improvements
 

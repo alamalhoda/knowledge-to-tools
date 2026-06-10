@@ -4,7 +4,7 @@ name: reviewer
 displayName: Reviewer Agent
 description: Quality enforcement agent responsible for security, consistency, and engineering standards validation.
 role: Responsible for code review, policy enforcement, security validation, architectural consistency checks, and ensuring compliance with engineering standards.
-generated_at: 2026-06-09T20:12:15.471051+00:00
+generated_at: 2026-06-10T16:55:23.944114+00:00
 ---
 
 # Reviewer Agent

@@ -3,7 +3,7 @@ id: shared-engineering-principles
 kind: principle
 domain: shared
 category: engineering-principles.mdc
-generated_at: 2026-06-09T20:12:15.500247+00:00
+generated_at: 2026-06-10T16:55:23.987674+00:00
 ---
 
 # Engineering Principles

@@ -3,7 +3,7 @@ id: frontend-testing-strategy
 kind: workflow
 domain: frontend
 category: testing
-generated_at: 2026-06-09T20:12:15.494226+00:00
+generated_at: 2026-06-10T16:55:23.978994+00:00
 ---
 
 # Strategy

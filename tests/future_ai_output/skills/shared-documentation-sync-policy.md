@@ -3,7 +3,7 @@ id: shared-documentation-sync-policy
 kind: policy
 domain: shared
 category: documentation-sync-policy.mdc
-generated_at: 2026-06-09T20:12:15.499979+00:00
+generated_at: 2026-06-10T16:55:23.987464+00:00
 ---
 
 # Documentation Sync Policy

@@ -3,7 +3,7 @@ id: frontend-architecture-atomic-design
 kind: architecture
 domain: frontend
 category: architecture
-generated_at: 2026-06-09T20:12:15.479897+00:00
+generated_at: 2026-06-10T16:55:23.958858+00:00
 ---
 
 # Atomic Design

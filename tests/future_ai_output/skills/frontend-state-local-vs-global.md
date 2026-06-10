@@ -3,7 +3,7 @@ id: frontend-state-local-vs-global
 kind: skill
 domain: frontend
 category: state
-generated_at: 2026-06-09T20:12:15.491367+00:00
+generated_at: 2026-06-10T16:55:23.978358+00:00
 ---
 
 # Local Vs Global

@@ -3,7 +3,7 @@ id: frontend-ui-ux-accessibility
 kind: rule
 domain: frontend
 category: ui-ux
-generated_at: 2026-06-09T20:12:15.495965+00:00
+generated_at: 2026-06-10T16:55:23.985824+00:00
 ---
 
 # Accessibility

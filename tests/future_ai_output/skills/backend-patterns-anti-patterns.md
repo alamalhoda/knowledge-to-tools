@@ -3,7 +3,7 @@ id: backend-patterns-anti-patterns
 kind: reference
 domain: backend
 category: patterns
-generated_at: 2026-06-09T20:12:15.476045+00:00
+generated_at: 2026-06-10T16:55:23.955465+00:00
 ---
 
 # Anti Patterns

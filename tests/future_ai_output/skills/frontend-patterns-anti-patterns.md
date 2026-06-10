@@ -3,7 +3,7 @@ id: frontend-patterns-anti-patterns
 kind: reference
 domain: frontend
 category: patterns
-generated_at: 2026-06-09T20:12:15.484393+00:00
+generated_at: 2026-06-10T16:55:23.975040+00:00
 ---
 
 # Anti Patterns

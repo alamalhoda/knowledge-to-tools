@@ -12,6 +12,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from ir.compiler import IRCompiler
 from ir.validator import IRValidator
 from ir.version import IR_VERSION, SUPPORTED_VERSIONS, raise_if_unsupported, UnsupportedIRVersionError
+from ir.runtime_payload import SerializedIRPayload
 from emitters.kilo import KiloEmitter
 from emitters.opencode import OpenCodeEmitter
 from emitters.cursor import CursorEmitter
@@ -102,6 +103,8 @@ def main() -> int:
             f"Compiled IR version '{ir_root.version}' is not supported. "
             f"Supported: {SUPPORTED_VERSIONS}"
         )
+
+    runtime_payload = SerializedIRPayload.from_ir(ir_root)
 
     save_json(Path(".ai/ir/ir_compiled.json"), ir_root.to_dict())
     print(f"✔ IR compiled (version {ir_root.version}).")
