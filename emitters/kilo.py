@@ -207,14 +207,9 @@ mode: primary
 color: "#3B82F6"
 
 permission:
-  edit: {edit_perm}
-  bash: {bash_perm}
-  read: allow
-
-tools:
-  - edit
-  - read
-  - bash
+   edit: {edit_perm}
+   bash: {bash_perm}
+   read: allow
 
 context:
   - .kilo/skills
