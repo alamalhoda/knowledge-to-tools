@@ -115,6 +115,10 @@
 
 ## Shared
 
+### ai-workflow
+
+- [AI-Assisted Feature Implementation Guide](shared/ai-feature-implementation-guide.md)
+
 ### code-quality-baseline.mdc
 
 - [Code Quality Baseline](shared/code-quality-baseline.md)
@@ -162,6 +166,10 @@
 ---
 
 ## 🕸 Rule Graph
+
+```
+shared::ai-workflow::AI-Assisted Feature Implementation Guide
+```
 
 ```
 shared::code-quality-baseline.mdc::Code Quality Baseline

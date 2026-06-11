@@ -30,8 +30,8 @@
     "match_domains": ["backend", "frontend", "shared"],
     "match_patterns": ["**/*.py", "**/*.ts", "**/*.tsx", "**/*.vue"]
   },
-  "capabilities": ["system-design"],
-  "workflows": ["backend-api-flow", "frontend-feature-flow"],
+  "capabilities": ["system-design", "requirements-analysis", "technical-design", "technical-writing", "ui-architecture"],
+  "workflows": ["backend-api-flow", "frontend-feature-flow", "ai-feature-implementation-flow"],
   "blueprints": [
     "backend-architecture-django-architecture",
     "frontend-architecture-atomic-design",

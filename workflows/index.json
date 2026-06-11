@@ -80,79 +80,101 @@
     ]
   },
   "ai-feature-implementation-flow": {
-  "id": "ai-feature-implementation-flow",
-  "name": "AI-Assisted Feature Implementation",
-  "description": "Guided workflow for clarifying requirements, writing feature specs, technical planning, implementation, self-review, test generation, and integration check.",
-  "domain": "shared",
-  "category": "process",
-  "triggers": ["ai feature", "feature implementation", "feature spec", "implementation plan", "integration check"],
-  "agents": ["architect", "backend", "reviewer"],
-  "capabilities_required": ["requirements-analysis", "technical-design", "django-development", "code-review"],
-  "priority": 90,
-  "stages": [
-    {
-      "id": "requirement-clarification",
-      "name": "Requirement Clarification",
-      "agent": "architect",
-      "depends_on": [],
-      "required_knowledge": ["ai-feature-implementation-guide"],
-      "required_capabilities": ["requirements-analysis"],
-      "status": "pending"
-    },
-    {
-      "id": "feature-specification",
-      "name": "Feature Specification",
-      "agent": "architect",
-      "depends_on": ["requirement-clarification"],
-      "required_knowledge": ["ai-feature-implementation-guide"],
-      "required_capabilities": ["technical-writing"],
-      "status": "pending"
-    },
-    {
-      "id": "technical-design",
-      "name": "Technical Design",
-      "agent": "architect",
-      "depends_on": ["feature-specification"],
-      "required_knowledge": ["ai-feature-implementation-guide"],
-      "required_capabilities": ["system-design"],
-      "status": "pending"
-    },
-    {
-      "id": "implementation",
-      "name": "Implementation",
-      "agent": "backend",
-      "depends_on": ["technical-design"],
-      "required_knowledge": ["ai-feature-implementation-guide"],
-      "required_capabilities": ["django-development"],
-      "status": "pending"
-    },
-    {
-      "id": "self-review",
-      "name": "Self Review",
-      "agent": "backend",
-      "depends_on": ["implementation"],
-      "required_knowledge": ["ai-feature-implementation-guide"],
-      "required_capabilities": ["code-review"],
-      "status": "pending"
-    },
-    {
-      "id": "test-generation",
-      "name": "Test Generation",
-      "agent": "backend",
-      "depends_on": ["self-review"],
-      "required_knowledge": ["ai-feature-implementation-guide"],
-      "required_capabilities": ["django-development"],
-      "status": "pending"
-    },
-    {
-      "id": "integration-check",
-      "name": "Integration Check",
-      "agent": "reviewer",
-      "depends_on": ["test-generation"],
-      "required_knowledge": ["ai-feature-implementation-guide"],
-      "required_capabilities": ["code-review", "security-audit"],
-      "status": "pending"
-    }
-  ]
-}
+    "id": "ai-feature-implementation-flow",
+    "name": "AI-Assisted Feature Implementation",
+    "description": "Guided workflow for AI-assisted feature development from requirement clarification through spec, design, implementation, review, tests, and integration check.",
+    "domain": "shared",
+    "category": "process",
+    "triggers": [
+      "ai[-\\s]?feature",
+      "feature[-\\s]?implementation",
+      "feature[-\\s]?spec",
+      "implementation[-\\s]?plan",
+      "integration[-\\s]?check",
+      "ai[-\\s]?assisted[-\\s]?development"
+    ],
+    "agents": ["architect", "backend", "reviewer"],
+    "capabilities_required": [
+      "requirements-analysis",
+      "technical-design",
+      "technical-writing",
+      "django-development",
+      "test-design",
+      "code-review",
+      "security-audit"
+    ],
+    "priority": 90,
+    "stages": [
+      {
+        "id": "requirement-clarification",
+        "name": "Requirement Clarification",
+        "agent": "architect",
+        "depends_on": [],
+        "required_knowledge": ["ai-feature-implementation-guide"],
+        "required_capabilities": ["requirements-analysis"],
+        "output_to": ["answered-clarifying-questions"],
+        "status": "pending"
+      },
+      {
+        "id": "feature-specification",
+        "name": "Feature Specification",
+        "agent": "architect",
+        "depends_on": ["requirement-clarification"],
+        "required_knowledge": ["ai-feature-implementation-guide"],
+        "required_capabilities": ["technical-writing"],
+        "output_to": ["feature_spec.md"],
+        "status": "pending"
+      },
+      {
+        "id": "technical-design",
+        "name": "Technical Design",
+        "agent": "architect",
+        "depends_on": ["feature-specification"],
+        "required_knowledge": ["ai-feature-implementation-guide"],
+        "required_capabilities": ["technical-design"],
+        "output_to": ["implementation_plan.md"],
+        "status": "pending"
+      },
+      {
+        "id": "implementation",
+        "name": "Implementation",
+        "agent": "backend",
+        "depends_on": ["technical-design"],
+        "required_knowledge": ["ai-feature-implementation-guide"],
+        "required_capabilities": ["django-development"],
+        "output_to": ["source-code"],
+        "status": "pending"
+      },
+      {
+        "id": "self-review",
+        "name": "Self Review",
+        "agent": "backend",
+        "depends_on": ["implementation"],
+        "required_knowledge": ["ai-feature-implementation-guide"],
+        "required_capabilities": ["code-review"],
+        "output_to": ["self-review-notes"],
+        "status": "pending"
+      },
+      {
+        "id": "test-generation",
+        "name": "Test Generation",
+        "agent": "backend",
+        "depends_on": ["self-review"],
+        "required_knowledge": ["ai-feature-implementation-guide"],
+        "required_capabilities": ["test-design"],
+        "output_to": ["test-files"],
+        "status": "pending"
+      },
+      {
+        "id": "integration-check",
+        "name": "Integration Check",
+        "agent": "reviewer",
+        "depends_on": ["test-generation"],
+        "required_knowledge": ["ai-feature-implementation-guide"],
+        "required_capabilities": ["code-review", "security-audit"],
+        "output_to": ["integration_check.md"],
+        "status": "pending"
+      }
+    ]
+  }
 }

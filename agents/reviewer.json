@@ -37,7 +37,7 @@
     "match_patterns": ["**/*.py", "**/*.ts", "**/*.tsx", "**/*.vue"]
   },
   "capabilities": ["code-review", "security-audit", "accessibility-audit"],
-  "workflows": ["backend-api-flow", "frontend-feature-flow"],
+  "workflows": ["backend-api-flow", "frontend-feature-flow", "ai-feature-implementation-flow"],
   "blueprints": [
     "backend-architecture-django-architecture",
     "frontend-architecture-atomic-design",

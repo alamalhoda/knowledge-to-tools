@@ -118,5 +118,55 @@
     "requires": ["frontend-development"],
     "provides": ["component-design", "state-management"],
     "priority": 85
+  },
+  "requirements-analysis": {
+    "name": "Requirements Analysis",
+    "description": "Capability for clarifying requirements, edge cases, acceptance criteria, and business rules.",
+    "domain": "shared",
+    "category": "process",
+    "tags": ["requirements", "specification", "ai-assisted"],
+    "requires": ["system-design"],
+    "provides": [],
+    "priority": 90
+  },
+  "technical-design": {
+    "name": "Technical Design",
+    "description": "Capability for converting feature specs into implementation plans and architecture decisions.",
+    "domain": "shared",
+    "category": "architecture",
+    "tags": ["design", "architecture", "planning"],
+    "requires": ["system-design"],
+    "provides": [],
+    "priority": 90
+  },
+  "technical-writing": {
+    "name": "Technical Writing",
+    "description": "Capability for writing precise specs, implementation plans, and integration reports.",
+    "domain": "shared",
+    "category": "documentation",
+    "tags": ["documentation", "specification", "planning"],
+    "requires": ["requirements-analysis"],
+    "provides": [],
+    "priority": 85
+  },
+  "django-development": {
+    "name": "Django Development",
+    "description": "Capability for implementing Django models, services, APIs, migrations, and tests.",
+    "domain": "backend",
+    "category": "development",
+    "tags": ["django", "python", "backend"],
+    "requires": ["backend-development"],
+    "provides": ["api-design", "database-modeling"],
+    "priority": 90
+  },
+  "test-design": {
+    "name": "Test Design",
+    "description": "Capability for deriving unit, edge-case, failure, and integration tests from specifications.",
+    "domain": "shared",
+    "category": "testing",
+    "tags": ["testing", "pytest", "specification"],
+    "requires": ["code-review"],
+    "provides": [],
+    "priority": 85
   }
 }

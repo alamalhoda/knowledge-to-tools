@@ -42,8 +42,8 @@
     "match_domains": ["backend"],
     "match_patterns": ["backend/**/*.py"]
   },
-  "capabilities": ["backend-development", "api-design", "database-modeling"],
-  "workflows": ["backend-api-flow"],
+  "capabilities": ["backend-development", "api-design", "database-modeling", "django-development", "test-design", "code-review"],
+  "workflows": ["backend-api-flow", "ai-feature-implementation-flow"],
   "blueprints": ["backend-architecture-django-architecture"],
   "bundles": ["backend-foundation"],
   "metadata": {

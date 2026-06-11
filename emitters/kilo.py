@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from datetime import datetime, timezone
+import json
 from typing import Dict, Any, List, Optional
 
 from .base import BaseEmitter
@@ -54,7 +55,6 @@ class KiloEmitter(BaseEmitter):
                 f"id: {k['id']}\n"
                 f"kind: {kind}\n"
                 f"domain: {k['domain']}\n"
-                f"generated_at: {_now_iso()}\n"
                 f"---\n\n"
                 f"# {summary}\n\n"
                 f"{raw}\n\n"
@@ -68,34 +68,90 @@ class KiloEmitter(BaseEmitter):
 
         print(f"✔ SkillsEmitter: Generated {count} skills.")
 
-    def _emit_workflows(self, ir_dict: Dict[str, Any], base: Path) -> None:
-        wf_dir = base / "workflows"
-        count = 0
+    def _workflow_index_path(self) -> Path:
+        return Path(__file__).resolve().parent.parent / "workflows" / "index.json"
 
+    def _load_workflow_index(self) -> List[Dict[str, Any]]:
+        index_path = self._workflow_index_path()
+        if not index_path.exists():
+            return []
+
+        try:
+            data = json.loads(index_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"Invalid workflow index at {index_path}: {exc}") from exc
+
+        workflows = data.values() if isinstance(data, dict) else data
+        return [
+            dict(workflow)
+            for workflow in workflows
+            if isinstance(workflow, dict) and isinstance(workflow.get("id"), str) and workflow["id"]
+        ]
+
+    def _workflow_nodes_from_knowledge(self, knowledge: List[Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
+        nodes: Dict[str, Dict[str, Any]] = {}
+
+        for k in knowledge:
+            if k.get("kind") != "workflow" or not isinstance(k.get("id"), str):
+                continue
+
+            nodes[k["id"]] = {
+                "id": k["id"],
+                "domain": k.get("domain", "shared"),
+                "content": {
+                    "summary": k.get("content", {}).get("summary", k["id"]),
+                    "raw": k.get("content", {}).get("raw", ""),
+                },
+            }
+
+        return nodes
+
+    def _workflow_index_node(self, workflow: Dict[str, Any]) -> Dict[str, Any]:
+        workflow_id = workflow["id"]
+        return {
+            "id": workflow_id,
+            "domain": workflow.get("domain", "shared"),
+            "content": {
+                "summary": workflow.get("name", workflow_id),
+                "raw": json.dumps(workflow, indent=2, ensure_ascii=False),
+            },
+        }
+
+    def _workflow_nodes(self, ir_dict: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
         knowledge = ir_dict.get("knowledge", [])
         if isinstance(knowledge, dict):
             knowledge = list(knowledge.values())
 
-        for k in knowledge:
-            if k.get("kind") != "workflow":
-                continue
+        nodes = self._workflow_nodes_from_knowledge(knowledge)
+        for workflow in self._load_workflow_index():
+            nodes[workflow["id"]] = self._workflow_index_node(workflow)
 
-            path = wf_dir / k["id"] / "WORKFLOW.md"
-            summary = k.get("content", {}).get("summary", "")
-            raw = k.get("content", {}).get("raw", "")
+        return nodes
 
-            content = (
-                f"---\n"
-                f"id: {k['id']}\n"
-                f"kind: workflow\n"
-                f"domain: {k['domain']}\n"
-                f"generated_at: {_now_iso()}\n"
-                f"---\n\n"
-                f"# Workflow: {summary}\n\n"
-                f"{raw}\n"
-            )
+    def _emit_workflow_node(self, workflow: Dict[str, Any], wf_dir: Path) -> None:
+        workflow_id = workflow["id"]
+        path = wf_dir / workflow_id / "WORKFLOW.md"
+        summary = workflow.get("content", {}).get("summary", "")
+        raw = workflow.get("content", {}).get("raw", "")
 
-            _safe_write(path, content)
+        content = (
+            f"---\n"
+            f"id: {workflow_id}\n"
+            f"kind: workflow\n"
+            f"domain: {workflow.get('domain', 'shared')}\n"
+            f"---\n\n"
+            f"# Workflow: {summary}\n\n"
+            f"{raw}\n"
+        )
+
+        _safe_write(path, content)
+
+    def _emit_workflows(self, ir_dict: Dict[str, Any], base: Path) -> None:
+        wf_dir = base / "workflows"
+        count = 0
+
+        for workflow in self._workflow_nodes(ir_dict).values():
+            self._emit_workflow_node(workflow, wf_dir)
             count += 1
 
         print(f"✔ WorkflowEmitter: Generated {count} workflows.")
@@ -121,7 +177,6 @@ class KiloEmitter(BaseEmitter):
                 f"id: {k['id']}\n"
                 f"kind: architecture\n"
                 f"domain: {k['domain']}\n"
-                f"generated_at: {_now_iso()}\n"
                 f"---\n\n"
                 f"# Architecture Blueprint: {summary}\n\n"
                 f"{raw}\n"
