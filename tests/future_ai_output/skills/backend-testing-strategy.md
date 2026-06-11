@@ -3,7 +3,7 @@ id: backend-testing-strategy
 kind: workflow
 domain: backend
 category: testing
-generated_at: 2026-06-10T16:55:23.958305+00:00
+generated_at: 2026-06-11T08:14:17.850558+00:00
 ---
 
 # Strategy

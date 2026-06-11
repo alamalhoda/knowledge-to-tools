@@ -3,7 +3,7 @@ id: frontend-ui-ux-styling
 kind: reference
 domain: frontend
 category: ui-ux
-generated_at: 2026-06-10T16:55:23.986851+00:00
+generated_at: 2026-06-11T08:14:17.859286+00:00
 ---
 
 # Styling

@@ -137,6 +137,9 @@ class KiloEmitter(BaseEmitter):
         agents_dir.mkdir(parents=True, exist_ok=True)
 
         agents_data = ir_dict.get("agents", {})
+        knowledge_list = ir_dict.get("knowledge", [])
+        if isinstance(knowledge_list, dict):
+            knowledge_list = list(knowledge_list.values())
 
         summary_sections: List[str] = [
             "# Aegis Agents",
@@ -148,7 +151,7 @@ class KiloEmitter(BaseEmitter):
         for agent_id, agent_ir in agents_data.items():
             agent_file = agents_dir / f"{agent_id}.md"
 
-            matches = self._resolve_agent_skills(agent_ir)
+            matches = self._resolve_agent_skills(agent_ir, knowledge_list)
 
             agent_md = self._render_kilo_agent_md(agent_id, agent_ir, matches)
             _safe_write(agent_file, agent_md)
@@ -161,11 +164,30 @@ class KiloEmitter(BaseEmitter):
 
         print(f"✔ AgentsEmitter: Generated {len(agents_data)} agents in .kilo/agents/ and AGENTS.md summary.")
 
-    def _resolve_agent_skills(self, agent_ir: Dict[str, Any]) -> Dict[str, List[str]]:
+    def _resolve_agent_skills(self, agent_ir: Dict[str, Any], knowledge: List[Dict[str, Any]]) -> Dict[str, List[str]]:
+        domains = set(agent_ir.get("domains", []))
+        
+        matched_skills = []
+        matched_workflows = list(agent_ir.get("workflows", []))
+        matched_architecture = list(agent_ir.get("blueprints", []))
+        
+        for k in knowledge:
+            k_domain = k.get("domain", "")
+            k_kind = k.get("kind", "")
+            if k_domain not in domains and k_domain != "shared":
+                continue
+            
+            if k_kind in {"rule", "principle", "reference", "policy", "skill"}:
+                matched_skills.append(k["id"])
+            elif k_kind == "workflow" and k["id"] not in matched_workflows:
+                matched_workflows.append(k["id"])
+            elif k_kind == "architecture" and k["id"] not in matched_architecture:
+                matched_architecture.append(k["id"])
+        
         return {
-            "skills": agent_ir.get("skills", []),
-            "workflows": agent_ir.get("workflows", []),
-            "architecture": agent_ir.get("blueprints", [])
+            "skills": matched_skills,
+            "workflows": matched_workflows,
+            "architecture": matched_architecture
         }
 
     def _render_kilo_agent_md(self, agent_id: str, meta: Dict[str, Any], matches: Dict[str, List[str]]) -> str:

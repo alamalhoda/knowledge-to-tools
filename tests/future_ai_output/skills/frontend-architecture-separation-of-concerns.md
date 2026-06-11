@@ -3,7 +3,7 @@ id: frontend-architecture-separation-of-concerns
 kind: architecture
 domain: frontend
 category: architecture
-generated_at: 2026-06-10T16:55:23.973983+00:00
+generated_at: 2026-06-11T08:14:17.852774+00:00
 ---
 
 # Separation Of Concerns

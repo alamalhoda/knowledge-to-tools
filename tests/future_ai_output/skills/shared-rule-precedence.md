@@ -3,7 +3,7 @@ id: shared-rule-precedence
 kind: rule
 domain: shared
 category: rule-precedence.mdc
-generated_at: 2026-06-10T16:55:23.989452+00:00
+generated_at: 2026-06-11T08:14:17.862442+00:00
 ---
 
 # Rule Precedence

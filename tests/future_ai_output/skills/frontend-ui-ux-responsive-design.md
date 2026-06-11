@@ -3,7 +3,7 @@ id: frontend-ui-ux-responsive-design
 kind: skill
 domain: frontend
 category: ui-ux
-generated_at: 2026-06-10T16:55:23.986616+00:00
+generated_at: 2026-06-11T08:14:17.858986+00:00
 ---
 
 # Responsive Design

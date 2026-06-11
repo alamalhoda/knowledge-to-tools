@@ -3,7 +3,7 @@ id: shared-rule-authoring-standard
 kind: rule
 domain: shared
 category: rule-authoring-standard.mdc
-generated_at: 2026-06-10T16:55:23.989253+00:00
+generated_at: 2026-06-11T08:14:17.862161+00:00
 ---
 
 # Rule Authoring Standard

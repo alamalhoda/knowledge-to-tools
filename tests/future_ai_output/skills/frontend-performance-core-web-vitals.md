@@ -3,7 +3,7 @@ id: frontend-performance-core-web-vitals
 kind: skill
 domain: frontend
 category: performance
-generated_at: 2026-06-10T16:55:23.977121+00:00
+generated_at: 2026-06-11T08:14:17.856023+00:00
 ---
 
 # Core Web Vitals

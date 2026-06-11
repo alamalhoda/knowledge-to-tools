@@ -3,7 +3,7 @@ id: frontend-performance-runtime
 kind: skill
 domain: frontend
 category: performance
-generated_at: 2026-06-10T16:55:23.978129+00:00
+generated_at: 2026-06-11T08:14:17.856611+00:00
 ---
 
 # Runtime

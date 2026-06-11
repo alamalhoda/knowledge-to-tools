@@ -3,7 +3,7 @@ id: frontend-core-ai-behavior
 kind: rule
 domain: frontend
 category: core
-generated_at: 2026-06-10T16:55:23.974424+00:00
+generated_at: 2026-06-11T08:14:17.853629+00:00
 ---
 
 # Ai Behavior

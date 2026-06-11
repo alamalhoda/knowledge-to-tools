@@ -3,7 +3,7 @@ id: backend-security-security
 kind: rule
 domain: backend
 category: security
-generated_at: 2026-06-10T16:55:23.957005+00:00
+generated_at: 2026-06-11T08:14:17.850298+00:00
 ---
 
 # Security

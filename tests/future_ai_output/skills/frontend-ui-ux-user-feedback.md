@@ -3,7 +3,7 @@ id: frontend-ui-ux-user-feedback
 kind: skill
 domain: frontend
 category: ui-ux
-generated_at: 2026-06-10T16:55:23.987056+00:00
+generated_at: 2026-06-11T08:14:17.859601+00:00
 ---
 
 # User Feedback

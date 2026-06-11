@@ -3,7 +3,7 @@ id: frontend-patterns-props-events
 kind: skill
 domain: frontend
 category: patterns
-generated_at: 2026-06-10T16:55:23.975808+00:00
+generated_at: 2026-06-11T08:14:17.855114+00:00
 ---
 
 # Props Events
