@@ -3,7 +3,7 @@ id: backend-api-rest
 kind: rule
 domain: backend
 category: api
-generated_at: 2026-06-11T08:14:17.847060+00:00
+generated_at: 2026-06-11T20:40:16.242579+00:00
 ---
 
 # Rest

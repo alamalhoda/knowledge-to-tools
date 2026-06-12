@@ -3,7 +3,7 @@ id: frontend-ui-ux-interaction-patterns
 kind: skill
 domain: frontend
 category: ui-ux
-generated_at: 2026-06-11T08:14:17.858640+00:00
+generated_at: 2026-06-11T20:40:16.260595+00:00
 ---
 
 # Interaction Patterns

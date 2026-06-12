@@ -3,7 +3,7 @@ id: frontend-patterns-reactivity
 kind: skill
 domain: frontend
 category: patterns
-generated_at: 2026-06-11T08:14:17.855303+00:00
+generated_at: 2026-06-11T20:40:16.256516+00:00
 ---
 
 # Reactivity

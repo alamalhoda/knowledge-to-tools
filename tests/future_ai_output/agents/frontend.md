@@ -4,7 +4,7 @@ name: frontend
 displayName: Frontend Engineer Agent
 description: Frontend execution agent responsible for Vue 3 UI, state management, UX, and frontend architecture.
 role: Responsible for implementing UI and frontend architecture including Vue components, Pinia state management, UX/UI, responsiveness, accessibility, API integration, and performance optimization.
-generated_at: 2026-06-11T08:14:17.846380+00:00
+generated_at: 2026-06-11T20:40:16.239421+00:00
 ---
 
 # Frontend Engineer Agent

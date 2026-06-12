@@ -3,7 +3,7 @@ id: backend-core-design-principles
 kind: principle
 domain: backend
 category: core
-generated_at: 2026-06-11T08:14:17.848283+00:00
+generated_at: 2026-06-11T20:40:16.246972+00:00
 ---
 
 # Design Principles

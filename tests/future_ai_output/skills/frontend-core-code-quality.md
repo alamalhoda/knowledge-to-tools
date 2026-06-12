@@ -3,7 +3,7 @@ id: frontend-core-code-quality
 kind: reference
 domain: frontend
 category: core
-generated_at: 2026-06-11T08:14:17.853900+00:00
+generated_at: 2026-06-11T20:40:16.252444+00:00
 ---
 
 # Code Quality

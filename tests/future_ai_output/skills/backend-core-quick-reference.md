@@ -3,7 +3,7 @@ id: backend-core-quick-reference
 kind: reference
 domain: backend
 category: core
-generated_at: 2026-06-11T08:14:17.848496+00:00
+generated_at: 2026-06-11T20:40:16.247756+00:00
 ---
 
 # Quick Reference

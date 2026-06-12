@@ -3,7 +3,7 @@ id: shared-rules-audit-checklist
 kind: workflow
 domain: shared
 category: rules-audit-checklist.mdc
-generated_at: 2026-06-11T08:14:17.862699+00:00
+generated_at: 2026-06-11T20:40:16.264889+00:00
 ---
 
 # Rules Audit Checklist

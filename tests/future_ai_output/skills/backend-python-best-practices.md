@@ -3,7 +3,7 @@ id: backend-python-best-practices
 kind: skill
 domain: backend
 category: python
-generated_at: 2026-06-11T08:14:17.850112+00:00
+generated_at: 2026-06-11T20:40:16.249700+00:00
 ---
 
 # Best Practices

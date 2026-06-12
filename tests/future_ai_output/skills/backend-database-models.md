@@ -3,7 +3,7 @@ id: backend-database-models
 kind: rule
 domain: backend
 category: database
-generated_at: 2026-06-11T08:14:17.848758+00:00
+generated_at: 2026-06-11T20:40:16.248208+00:00
 ---
 
 # Models

@@ -3,7 +3,7 @@ id: backend-architecture-django-architecture
 kind: architecture
 domain: backend
 category: architecture
-generated_at: 2026-06-11T08:14:17.847384+00:00
+generated_at: 2026-06-11T20:40:16.243095+00:00
 ---
 
 # Django Architecture

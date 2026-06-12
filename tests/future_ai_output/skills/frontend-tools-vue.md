@@ -3,7 +3,7 @@ id: frontend-tools-vue
 kind: skill
 domain: frontend
 category: tools
-generated_at: 2026-06-11T08:14:17.858238+00:00
+generated_at: 2026-06-11T20:40:16.260068+00:00
 ---
 
 # Vue

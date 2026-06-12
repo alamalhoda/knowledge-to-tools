@@ -3,7 +3,7 @@ id: shared-git-workflow
 kind: workflow
 domain: shared
 category: git-workflow.mdc
-generated_at: 2026-06-11T08:14:17.861077+00:00
+generated_at: 2026-06-11T20:40:16.262623+00:00
 ---
 
 # Git Workflow

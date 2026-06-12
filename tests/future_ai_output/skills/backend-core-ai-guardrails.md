@@ -3,7 +3,7 @@ id: backend-core-ai-guardrails
 kind: rule
 domain: backend
 category: core
-generated_at: 2026-06-11T08:14:17.847951+00:00
+generated_at: 2026-06-11T20:40:16.243898+00:00
 ---
 
 # Ai Guardrails

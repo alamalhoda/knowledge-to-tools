@@ -3,7 +3,7 @@ id: backend-logging-monitoring
 kind: reference
 domain: backend
 category: logging
-generated_at: 2026-06-11T08:14:17.849323+00:00
+generated_at: 2026-06-11T20:40:16.248880+00:00
 ---
 
 # Monitoring

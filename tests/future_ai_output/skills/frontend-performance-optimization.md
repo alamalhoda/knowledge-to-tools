@@ -3,7 +3,7 @@ id: frontend-performance-optimization
 kind: skill
 domain: frontend
 category: performance
-generated_at: 2026-06-11T08:14:17.856390+00:00
+generated_at: 2026-06-11T20:40:16.257634+00:00
 ---
 
 # Optimization

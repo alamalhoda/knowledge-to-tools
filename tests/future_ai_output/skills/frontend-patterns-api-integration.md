@@ -3,7 +3,7 @@ id: frontend-patterns-api-integration
 kind: skill
 domain: frontend
 category: patterns
-generated_at: 2026-06-11T08:14:17.854701+00:00
+generated_at: 2026-06-11T20:40:16.255187+00:00
 ---
 
 # Api Integration

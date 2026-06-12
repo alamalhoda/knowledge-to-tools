@@ -3,7 +3,7 @@ id: backend-configuration-settings
 kind: skill
 domain: backend
 category: configuration
-generated_at: 2026-06-11T08:14:17.847641+00:00
+generated_at: 2026-06-11T20:40:16.243466+00:00
 ---
 
 # Settings

@@ -3,7 +3,7 @@ id: frontend-core-meta-principles
 kind: principle
 domain: frontend
 category: core
-generated_at: 2026-06-11T08:14:17.854220+00:00
+generated_at: 2026-06-11T20:40:16.252767+00:00
 ---
 
 # Meta Principles

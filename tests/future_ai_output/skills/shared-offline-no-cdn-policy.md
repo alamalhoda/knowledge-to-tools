@@ -3,7 +3,7 @@ id: shared-offline-no-cdn-policy
 kind: policy
 domain: shared
 category: offline-no-cdn-policy.mdc
-generated_at: 2026-06-11T08:14:17.861693+00:00
+generated_at: 2026-06-11T20:40:16.263736+00:00
 ---
 
 # Offline No Cdn Policy

@@ -3,7 +3,7 @@ id: frontend-performance-asset-management
 kind: rule
 domain: frontend
 category: performance
-generated_at: 2026-06-11T08:14:17.855493+00:00
+generated_at: 2026-06-11T20:40:16.256829+00:00
 ---
 
 # Asset Management

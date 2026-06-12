@@ -3,7 +3,7 @@ id: shared-gitguardian-secrets-policy
 kind: policy
 domain: shared
 category: gitguardian-secrets-policy.mdc
-generated_at: 2026-06-11T08:14:17.861499+00:00
+generated_at: 2026-06-11T20:40:16.263400+00:00
 ---
 
 # Gitguardian Secrets Policy

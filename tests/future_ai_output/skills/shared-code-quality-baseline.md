@@ -3,7 +3,7 @@ id: shared-code-quality-baseline
 kind: rule
 domain: shared
 category: code-quality-baseline.mdc
-generated_at: 2026-06-11T08:14:17.859947+00:00
+generated_at: 2026-06-11T20:40:16.261954+00:00
 ---
 
 # Code Quality Baseline
