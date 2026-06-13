@@ -38,14 +38,14 @@ def test_future_emitter_independence() -> int:
     """Simulate adding a new emitter without changing IR or compiler."""
     import hashlib
 
-    index = load_json(Path(".ai/knowledge/index.json"))
+    index = load_json(Path("knowledge/index.json"))
     agents = {}
-    for f in sorted(Path(".ai/agents").glob("*.json")):
+    for f in sorted(Path("agents").glob("*.json")):
         agents[f.stem] = load_json(f)
 
-    workflows = load_json(Path(".ai/workflows/index.json"))
-    capabilities = load_json(Path(".ai/capabilities/index.json"))
-    knowledge_raw = load_knowledge_raw(index, Path(".ai/knowledge"))
+    workflows = load_json(Path("workflows/index.json"))
+    capabilities = load_json(Path("capabilities/index.json"))
+    knowledge_raw = load_knowledge_raw(index, Path("knowledge"))
     source_hash = hashlib.sha256(
         __import__('json').dumps({"index": index, "agents": agents}, sort_keys=True).encode()
     ).hexdigest()
@@ -70,7 +70,7 @@ def test_future_emitter_independence() -> int:
         return 1
     print("✔ Base IR validation passed")
 
-    output_dir = Path(".ai/tests/future_ai_output")
+    output_dir = Path("tests/future_ai_output")
     if output_dir.exists():
         import shutil
         shutil.rmtree(output_dir)

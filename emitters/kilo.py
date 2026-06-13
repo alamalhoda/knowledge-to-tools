@@ -24,6 +24,8 @@ class KiloEmitter(BaseEmitter):
     Consumes IR only; does not read knowledge directly.
     """
 
+    BASE_DIR = Path("aegis_output/kilo")
+
     def emit(self, ir: IRRoot, output_dir: Optional[Path] = None) -> None:
         ir_dict = self._ir_to_dict(ir)
         base = self._resolve_output_dir(output_dir)
@@ -217,7 +219,7 @@ class KiloEmitter(BaseEmitter):
 
         _safe_write(Path(base / "AGENTS.md"), "\n".join(summary_sections))
 
-        print(f"✔ AgentsEmitter: Generated {len(agents_data)} agents in .kilo/agents/ and AGENTS.md summary.")
+        print(f"✔ AgentsEmitter: Generated {len(agents_data)} agents in aegis_output/kilo/agents/ and AGENTS.md summary.")
 
     def _resolve_agent_skills(self, agent_ir: Dict[str, Any], knowledge: List[Dict[str, Any]]) -> Dict[str, List[str]]:
         domains = set(agent_ir.get("domains", []))
@@ -267,9 +269,9 @@ permission:
    read: allow
 
 context:
-  - .kilo/skills
-  - .kilo/workflows
-  - .kilo/architecture
+   - .kilo/skills
+   - .kilo/workflows
+   - .kilo/architecture
 
 steps: 30
 ---

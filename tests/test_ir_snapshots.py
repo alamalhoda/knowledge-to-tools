@@ -45,14 +45,14 @@ def compute_test_source_hash(index: Dict[str, Any], agents: Dict[str, Any]) -> s
 
 def test_ir_schema_compliance() -> bool:
     """Test that compiled IR conforms to the formal IR schema."""
-    index = load_json(Path(".ai/knowledge/index.json"))
+    index = load_json(Path("knowledge/index.json"))
     agents: Dict[str, Any] = {}
-    for f in sorted(Path(".ai/agents").glob("*.json")):
+    for f in sorted(Path("agents").glob("*.json")):
         agents[f.stem] = load_json(f)
 
-    workflows = load_json(Path(".ai/workflows/index.json"))
-    capabilities = load_json(Path(".ai/capabilities/index.json"))
-    knowledge_raw = load_knowledge_raw(index, Path(".ai/knowledge"))
+    workflows = load_json(Path("workflows/index.json"))
+    capabilities = load_json(Path("capabilities/index.json"))
+    knowledge_raw = load_knowledge_raw(index, Path("knowledge"))
 
     compiler = IRCompiler(
         knowledge_index=index,
@@ -101,14 +101,14 @@ def test_ir_schema_compliance() -> bool:
 
 def test_ir_determinism() -> bool:
     """Test that identical inputs produce structurally identical IR."""
-    index = load_json(Path(".ai/knowledge/index.json"))
+    index = load_json(Path("knowledge/index.json"))
     agents: Dict[str, Any] = {}
-    for f in sorted(Path(".ai/agents").glob("*.json")):
+    for f in sorted(Path("agents").glob("*.json")):
         agents[f.stem] = load_json(f)
 
-    workflows = load_json(Path(".ai/workflows/index.json"))
-    capabilities = load_json(Path(".ai/capabilities/index.json"))
-    knowledge_raw = load_knowledge_raw(index, Path(".ai/knowledge"))
+    workflows = load_json(Path("workflows/index.json"))
+    capabilities = load_json(Path("capabilities/index.json"))
+    knowledge_raw = load_knowledge_raw(index, Path("knowledge"))
     source_hash = compute_test_source_hash(index, agents)
 
     compiler = IRCompiler(
@@ -136,10 +136,10 @@ def test_ir_determinism() -> bool:
 
 def test_emitter_output_exists() -> bool:
     """Test that emitters produce expected output files."""
-    kilo_agents = Path(".kilo/agents")
-    opencode_agents = Path(".opencode/agents")
-    opencode_config = Path(".opencode/opencode.json")
-    cursor_agents = Path(".cursor/agents")
+    kilo_agents = Path("aegis_output/kilo/agents")
+    opencode_agents = Path("aegis_output/opencode/agents")
+    opencode_config = Path("aegis_output/opencode/opencode.json")
+    cursor_agents = Path("aegis_output/cursor/agents")
 
     assert kilo_agents.exists(), ".kilo/agents directory must exist"
     assert len(list(kilo_agents.glob("*.md"))) > 0, "Kilo agents must be generated"
@@ -161,10 +161,10 @@ def test_emitter_isolation() -> bool:
     import importlib.util
 
     emitter_files = [
-        ".ai/emitters/base.py",
-        ".ai/emitters/kilo.py",
-        ".ai/emitters/opencode.py",
-        ".ai/emitters/cursor.py",
+        "emitters/base.py",
+        "emitters/kilo.py",
+        "emitters/opencode.py",
+        "emitters/cursor.py",
     ]
 
     prohibited_modules = [
@@ -197,14 +197,14 @@ def test_emitter_isolation() -> bool:
 
 def test_ir_stability() -> bool:
     """Test that IR output is stable across regenerations."""
-    ir_path = Path(".ai/ir/ir_compiled.json")
+    ir_path = Path("ir/ir_compiled.json")
     if not ir_path.exists():
         return True
 
     current = ir_path.read_text(encoding="utf-8")
     current_hash = hashlib.sha256(current.encode("utf-8")).hexdigest()
 
-    snapshot_path = Path(".ai/tests/snapshots/ir_snapshot.hash")
+    snapshot_path = Path("tests/snapshots/ir_snapshot.hash")
     if snapshot_path.exists():
         expected_hash = snapshot_path.read_text(encoding="utf-8").strip()
         assert current_hash == expected_hash, (
@@ -220,14 +220,14 @@ def test_ir_stability() -> bool:
 
 def test_agent_registry_consistency() -> bool:
     """Test that all agents in registry are valid and referenced."""
-    index = load_json(Path(".ai/knowledge/index.json"))
+    index = load_json(Path("knowledge/index.json"))
     agents: Dict[str, Any] = {}
-    for f in sorted(Path(".ai/agents").glob("*.json")):
+    for f in sorted(Path("agents").glob("*.json")):
         agents[f.stem] = load_json(f)
 
-    workflows = load_json(Path(".ai/workflows/index.json"))
-    capabilities = load_json(Path(".ai/capabilities/index.json"))
-    knowledge_raw = load_knowledge_raw(index, Path(".ai/knowledge"))
+    workflows = load_json(Path("workflows/index.json"))
+    capabilities = load_json(Path("capabilities/index.json"))
+    knowledge_raw = load_knowledge_raw(index, Path("knowledge"))
     source_hash = compute_test_source_hash(index, agents)
 
     compiler = IRCompiler(

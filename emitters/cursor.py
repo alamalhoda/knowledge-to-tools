@@ -23,6 +23,8 @@ class CursorEmitter(BaseEmitter):
     Consumes IR only; does not read knowledge directly.
     """
 
+    BASE_DIR = Path("aegis_output/cursor")
+
     def emit(self, ir: IRRoot, output_dir: Optional[Path] = None) -> None:
         ir_dict = self._ir_to_dict(ir)
         base = self._resolve_output_dir(output_dir)

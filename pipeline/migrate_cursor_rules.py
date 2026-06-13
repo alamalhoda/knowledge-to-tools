@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Tuple
 
 
 SOURCE_ROOT = Path("old_cursor_rules")
-DEST_ROOT = Path(".ai/knowledge")
+DEST_ROOT = Path("knowledge")
 
 
 def parse_frontmatter(text: str) -> Tuple[Dict[str, Any], str]:

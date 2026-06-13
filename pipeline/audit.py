@@ -2,7 +2,7 @@ from pathlib import Path
 from collections import defaultdict
 import sys
 
-ROOT = Path(".ai/knowledge")
+ROOT = Path("knowledge")
 INDEX_FILE = ROOT / "index.md"
 
 REQUIRED_FIELDS = [

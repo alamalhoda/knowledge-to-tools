@@ -67,11 +67,11 @@ def validate_or_exit(ir_root: Any) -> None:
 def main() -> int:
     now_iso = datetime.now(timezone.utc).isoformat()
 
-    index_path = Path(".ai/knowledge/index.json")
-    agents_dir = Path(".ai/agents")
-    workflows_dir = Path(".ai/workflows")
-    capabilities_dir = Path(".ai/capabilities")
-    knowledge_dir = Path(".ai/knowledge")
+    index_path = Path("knowledge/index.json")
+    agents_dir = Path("agents")
+    workflows_dir = Path("workflows")
+    capabilities_dir = Path("capabilities")
+    knowledge_dir = Path("knowledge")
 
     index = load_json(index_path)
     agents: Dict[str, Any] = {}
@@ -106,20 +106,20 @@ def main() -> int:
 
     runtime_payload = SerializedIRPayload.from_ir(ir_root)
 
-    save_json(Path(".ai/ir/ir_compiled.json"), ir_root.to_dict())
+    save_json(Path("ir/ir_compiled.json"), ir_root.to_dict())
     print(f"✔ IR compiled (version {ir_root.version}).")
 
     print("🔧 Validating IR...")
     validate_or_exit(ir_root)
 
     print("🔧 Emitting Kilo artifacts...")
-    KiloEmitter().emit(ir_root, Path(".kilo"))
+    KiloEmitter().emit(ir_root, Path("aegis_output/kilo"))
 
     print("\n🔧 Emitting OpenCode artifacts...")
-    OpenCodeEmitter().emit(ir_root, Path(".opencode"))
+    OpenCodeEmitter().emit(ir_root, Path("aegis_output/opencode"))
 
     print("\n🔧 Emitting Cursor artifacts...")
-    CursorEmitter().emit(ir_root, Path(".cursor"))
+    CursorEmitter().emit(ir_root, Path("aegis_output/cursor"))
 
     print("\n🎉 Aegis v2 generation pipeline completed (IR → Kilo + OpenCode + Cursor).")
     return 0

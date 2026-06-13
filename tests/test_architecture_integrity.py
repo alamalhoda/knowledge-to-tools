@@ -28,7 +28,7 @@ PROHIBITED_EMITTER_IMPORTS = {
 
 def get_module_layer(module_path: Path) -> str:
     """Determine which layer a module belongs to."""
-    rel_parts = module_path.relative_to(Path(".ai")).parts
+    rel_parts = module_path.relative_to(Path(".")).parts
     if rel_parts[0] in LAYERS:
         return rel_parts[0]
     return "unknown"
@@ -63,9 +63,9 @@ def analyze_imports(file_path: Path, base_dir: Path) -> List[Tuple[str, str]]:
 def check_emitter_isolation() -> List[str]:
     """Verify emitters do not import prohibited modules."""
     violations = []
-    emitter_dir = Path(".ai/emitters")
+    emitter_dir = Path("emitters")
     for py_file in emitter_dir.rglob("*.py"):
-        imports = analyze_imports(py_file, Path(".ai"))
+        imports = analyze_imports(py_file, Path("."))
         for imp_type, imp_name in imports:
             for prohibited in PROHIBITED_EMITTER_IMPORTS:
                 if imp_name.startswith(prohibited):
@@ -78,7 +78,7 @@ def check_emitter_isolation() -> List[str]:
 def check_dependency_direction() -> List[str]:
     """Check that dependency direction follows allowed flow."""
     violations = []
-    base_dir = Path(".ai")
+    base_dir = Path(".")
     files = find_python_files(base_dir)
 
     for file_path in files:
@@ -110,7 +110,7 @@ def check_dependency_direction() -> List[str]:
 def check_circular_dependencies() -> List[str]:
     """Detect circular dependencies between modules."""
     import_graph: dict = {}
-    base_dir = Path(".ai")
+    base_dir = Path(".")
     files = find_python_files(base_dir)
 
     for file_path in files:
@@ -138,7 +138,7 @@ def check_circular_dependencies() -> List[str]:
 def check_ir_immutability() -> List[str]:
     """Verify IR models are immutable (frozen dataclasses)."""
     violations = []
-    models_dir = Path(".ai/ir/models")
+    models_dir = Path("ir/models")
 
     for py_file in models_dir.glob("*.py"):
         if py_file.name == "__init__.py":
@@ -157,7 +157,7 @@ def check_tool_leakage() -> List[str]:
     """Verify IR does not contain tool-specific configuration."""
     violations = []
 
-    ir_compiled = Path(".ai/ir/ir_compiled.json")
+    ir_compiled = Path("ir/ir_compiled.json")
     if not ir_compiled.exists():
         return violations
 

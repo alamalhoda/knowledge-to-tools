@@ -8,7 +8,7 @@ class IRTransformer:
     def __init__(self, knowledge_index: Dict[str, Any], agents: Dict[str, Any]) -> None:
         self.index = knowledge_index
         self.agents = agents
-        self.knowledge_root = Path(".ai/knowledge")
+        self.knowledge_root = Path("knowledge")
 
     def to_knowledge_ir(self, doc: Dict[str, Any]) -> Dict[str, Any]:
         source_path = self.knowledge_root / Path(doc["path"]).relative_to("knowledge")

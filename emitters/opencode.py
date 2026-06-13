@@ -23,7 +23,7 @@ class OpenCodeEmitter(BaseEmitter):
     Consumes IR only; does not read knowledge directly.
     """
 
-    BASE_DIR = Path(".opencode")
+    BASE_DIR = Path("aegis_output/opencode")
 
     def emit(self, ir: IRRoot, output_dir: Optional[Path] = None) -> None:
         ir_dict = self._ir_to_dict(ir)
