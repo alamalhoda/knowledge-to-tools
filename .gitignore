@@ -6,15 +6,29 @@ __pycache__/
 # macOS
 .DS_Store
 
+# SpecStory (user-specific tool history)
+.specstory/
+
+# VS Code settings (user-specific)
+.vscode/
+
 # Generated IR files (in ir/ root only)
 ir/runtime_ir.json
 ir/ir_data.json
+ir/ir_compiled.json
 
 # Generated plans directory
 plans/
 
 # Generated knowledge index
 knowledge/index.json
+
+# Aegis output (generated artifacts)
+aegis_output/
+
+# Test generated files
+tests/snapshots/
+tests/future_ai_output/
 
 # Empty placeholder directories (only contain __pycache__)
 /planning/

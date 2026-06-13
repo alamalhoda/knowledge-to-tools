@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from datetime import datetime, timezone
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, Optional
 
 from .base import BaseEmitter
 from ir.models import IRRoot
@@ -15,6 +16,57 @@ def _now_iso() -> str:
 def _safe_write(path: Path, content: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(content, encoding="utf-8")
+
+
+def _write_json(path: Path, data: Dict[str, Any]) -> None:
+    _safe_write(path, json.dumps(data, indent=2, ensure_ascii=False))
+
+
+def _permission_action(value: bool) -> str:
+    return "allow" if value else "deny"
+
+
+def _permission_config(agent_ir: Dict[str, Any]) -> Dict[str, str]:
+    permissions = agent_ir.get("permissions", {})
+    permission = {
+        "edit": _permission_action(permissions.get("edit", True)),
+        "bash": _permission_action(permissions.get("shell", False)),
+    }
+
+    if permissions.get("network", False):
+        permission["webfetch"] = "allow"
+        permission["websearch"] = "allow"
+    else:
+        permission["webfetch"] = "deny"
+        permission["websearch"] = "deny"
+
+    return permission
+
+
+def _agent_prompt(agent_ir: Dict[str, Any]) -> str:
+    parts = []
+
+    if agent_ir.get("role"):
+        parts.append(agent_ir["role"])
+
+    if agent_ir.get("behavior"):
+        parts.append(f"Behavior: {json.dumps(agent_ir['behavior'], ensure_ascii=False)}")
+
+    if agent_ir.get("authority"):
+        parts.append(f"Authority: {json.dumps(agent_ir['authority'], ensure_ascii=False)}")
+
+    return "\n\n".join(parts)
+
+
+def _agent_config(agent_id: str, agent_ir: Dict[str, Any], default_agent_id: str) -> Dict[str, Any]:
+    config = {
+        "description": agent_ir.get("description", ""),
+        "mode": "primary" if agent_id == default_agent_id else "subagent",
+        "prompt": _agent_prompt(agent_ir),
+        "permission": _permission_config(agent_ir),
+    }
+
+    return {key: value for key, value in config.items() if value not in ({}, "", [])}
 
 
 class OpenCodeEmitter(BaseEmitter):
@@ -73,52 +125,32 @@ generated_at: {_now_iso()}
     def _emit_agents(self, ir_dict: Dict[str, Any], base: Path) -> None:
         agents_dir = base / "agents"
         count = 0
+        agents = ir_dict.get("agents", {})
+        default_agent_id = next(iter(agents.keys()), "")
 
-        for agent_id, agent_ir in ir_dict.get("agents", {}).items():
+        for agent_id, agent_ir in agents.items():
             agent_file = agents_dir / f"{agent_id}.json"
-
-            agent_config = {
-                "name": agent_id,
-                "displayName": agent_ir.get("display_name", agent_id),
-                "description": agent_ir.get("description", ""),
-                "role": agent_ir.get("role", ""),
-                "version": "2.0",
-                "knowledge": {
-                    "domains": agent_ir.get("domains", []),
-                    "skills": agent_ir.get("skills", []),
-                    "workflows": agent_ir.get("workflows", []),
-                    "blueprints": agent_ir.get("blueprints", [])
-                },
-                "permissions": {
-                    "edit": agent_ir.get("permissions", {}).get("edit", True),
-                    "shell": agent_ir.get("permissions", {}).get("shell", False),
-                    "network": agent_ir.get("permissions", {}).get("network", False)
-                },
-                "behavior": agent_ir.get("behavior", {}),
-                "authority": agent_ir.get("authority", {})
-            }
-
-            _safe_write(agent_file, str(__import__('json').dumps(agent_config, indent=2, ensure_ascii=False)))
+            _write_json(agent_file, _agent_config(agent_id, agent_ir, default_agent_id))
             count += 1
 
         print(f"✔ AgentsEmitter: Generated {count} agents.")
 
     def _emit_config(self, ir_dict: Dict[str, Any], base: Path) -> None:
         config_path = base / "opencode.json"
+        agents = ir_dict.get("agents", {})
+        default_agent_id = next(iter(agents.keys()), "")
 
         config = {
-            "version": "2.0",
-            "generated_at": _now_iso(),
-            "agents": list(ir_dict.get("agents", {}).keys()),
-            "knowledge": {
-                "sources": ["skills/", "agents/"],
-                "auto_load": True
+            "$schema": "https://opencode.ai/config.json",
+            "default_agent": default_agent_id,
+            "agent": {
+                agent_id: _agent_config(agent_id, agent_ir, default_agent_id)
+                for agent_id, agent_ir in agents.items()
             },
-            "settings": {
-                "context_awareness": True,
-                "planner_integration": True
+            "skills": {
+                "paths": ["skills/"]
             }
         }
 
-        _safe_write(config_path, str(__import__('json').dumps(config, indent=2, ensure_ascii=False)))
+        _write_json(config_path, config)
         print("✔ ConfigEmitter: Generated opencode.json")
