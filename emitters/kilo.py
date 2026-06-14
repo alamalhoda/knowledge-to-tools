@@ -50,7 +50,7 @@ class KiloEmitter(BaseEmitter):
 
             skill_path = skills_dir / k["id"] / "SKILL.md"
             summary = k.get("content", {}).get("summary", "")
-            raw = k.get("content", {}).get("raw", "")[:2000]
+            raw = k.get("content", {}).get("raw", "")
 
             content = (
                 f"---\n"

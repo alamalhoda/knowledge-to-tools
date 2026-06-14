@@ -59,7 +59,7 @@ kind: rule
 ### Optimization
 - از image optimization استفاده کن
 - از compression استفاده کن
-- برای این پروژه از CDN اینترنتی استفاده نکن؛ از نسخه محلی/آفلاین استفاده کن (ر.ک. `share/offline-no-cdn-policy.mdc`)
+- برای این پروژه از CDN اینترنتی استفاده نکن؛ از نسخه محلی/آفلاین استفاده کن (ر.ک. `knowledge/shared/offline-no-cdn-policy.md`)
 
 ### Caching
 - از proper cache headers استفاده کن

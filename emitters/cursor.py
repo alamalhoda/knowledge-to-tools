@@ -43,7 +43,7 @@ class CursorEmitter(BaseEmitter):
                 continue
 
             rule_path = rules_dir / f"{doc['id']}.mdc"
-            raw = doc.get("content", {}).get("raw", "")[:3000]
+            raw = doc.get("content", {}).get("raw", "")
 
             content = f"""---
 title: {doc.get('content', {}).get('summary', '')}

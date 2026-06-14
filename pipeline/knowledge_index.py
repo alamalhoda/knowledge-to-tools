@@ -76,10 +76,10 @@ def split_frontmatter(content: str) -> tuple[dict[str, Any], str]:
 
 
 def infer_from_path(path: Path) -> dict[str, str]:
-"""
-Infer domain/category from structure:
-  knowledge/<domain>/<category>/<file>.md
-"""
+    """
+    Infer domain/category from structure:
+      knowledge/<domain>/<category>/<file>.md
+    """
     rel = path.relative_to(KNOWLEDGE_DIR)
     parts = rel.parts
 

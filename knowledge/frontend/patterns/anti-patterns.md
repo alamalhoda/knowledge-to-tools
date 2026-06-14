@@ -13,7 +13,7 @@ kind: reference
 # Anti-Patterns
 
 قاعده‌های عمومی anti-pattern در
-`.cursor/rules/share/code-quality-baseline.mdc`
+`knowledge/shared/code-quality-baseline.md`
 تعریف شده‌اند. این فایل فقط anti-patternهای اختصاصی frontend را پوشش می‌دهد.
 
 ## Prop Drilling

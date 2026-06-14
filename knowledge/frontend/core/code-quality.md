@@ -16,7 +16,7 @@ kind: reference
 ## Shared Baseline
 
 - baseline عمومی کیفیت کد در:
-  `.cursor/rules/share/code-quality-baseline.mdc`
+  `knowledge/shared/code-quality-baseline.md`
 - این فایل فقط جزئیات اختصاصی frontend را تعریف می‌کند.
 
 ## Component Quality Checklist

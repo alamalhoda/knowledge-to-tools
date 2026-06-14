@@ -103,7 +103,7 @@ generated_at: {_now_iso()}
 
             skill_path = skills_dir / f"{k['id']}.md"
             summary = k.get("content", {}).get("summary", "")
-            raw = k.get("content", {}).get("raw", "")[:1500]
+            raw = k.get("content", {}).get("raw", "")
 
             content = (
                 f"---\n"

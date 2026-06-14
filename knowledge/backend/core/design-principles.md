@@ -20,7 +20,7 @@ kind: principle
 ## Shared Source of Truth
 
 - اصول عمومی (SSOT/SoC/DRY/KISS/YAGNI/Explicitness) در
-  `.cursor/rules/share/engineering-principles.mdc` تعریف شده‌اند.
+  `knowledge/shared/engineering-principles.md` تعریف شده‌اند.
 - اگر اختلافی وجود داشت، rule تخصصی backend در این فایل اولویت دارد.
 
 ---

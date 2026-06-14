@@ -15,8 +15,8 @@ kind: workflow
 ## Source of Truth
 
 - مرجع اصلی و الزامی Git Flow در پروژه:
-  - `.cursor/rules/share/gitflow-branch-policy.mdc`
-- اگر هر اختلافی وجود داشت، همیشه `gitflow-branch-policy.mdc` اولویت دارد.
+  - `knowledge/shared/gitflow-branch-policy.md`
+- اگر هر اختلافی وجود داشت، همیشه `knowledge/shared/gitflow-branch-policy.md` اولویت دارد.
 
 ## Branch Strategy (Aligned)
 

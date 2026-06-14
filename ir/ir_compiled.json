@@ -1,7 +1,7 @@
 {
   "version": "2.0",
-  "generated_at": "2024-10-29T07:44:02Z",
-  "source_hash": "9de49c052387a14a99bd886520c984e595cb94399fd67652d1d46af85aa96818",
+  "generated_at": "2024-08-30T23:38:54Z",
+  "source_hash": "482e3277e027eeca6b3f54e166d0f3651c0a9d216eeb8d5e6a0336b2e47d8147",
   "knowledge": [
     {
       "type": "knowledge_ir",
@@ -311,7 +311,7 @@
       "category": "core",
       "kind": "principle",
       "content": {
-        "raw": "---\ntitle: Design Principles\nsummary: Backend design principles and examples aligned with shared engineering principles\ndomain: backend\ncategory: core\napplies_to:\n  - \"backend/**/*.py\"\npriority: 50\nkind: principle\n---\n\n# Design Principles (اصول طراحی)\n\nراهنمای طراحی backend Django با مثال‌های عملی.\n\n**English:** Backend-focused design guidance for Django with practical examples.\n\n---\n\n## Shared Source of Truth\n\n- اصول عمومی (SSOT/SoC/DRY/KISS/YAGNI/Explicitness) در\n  `.cursor/rules/share/engineering-principles.mdc` تعریف شده‌اند.\n- اگر اختلافی وجود داشت، rule تخصصی backend در این فایل اولویت دارد.\n\n---\n\n## God Class (کلاس خدا) — نقض SRP\n\n**توضیح:** کلاسی که چندین مسئولیت دارد و باید به کلاس‌های کوچک‌تر تقسیم شود.\n\n**Explanation:** A class with multiple responsibilities that should be split into smaller, focused classes.\n\n❌ نادرست / Wrong:\n\n```python\nclass OrderManager:\n    \"\"\"همه کارها در یک کلاس — نقض SRP\"\"\"\n\n    def create(self, user, data):\n        self._validate(data)\n        order = Order.objects.create(**data, user=user)\n        self._send_notification(order)\n        return order\n\n    def cancel(self, order):\n        if order.status != \"PENDING\":\n            raise ValidationError(\"Cannot cancel\")\n        order.status = \"CANCELLED\"\n        order.save()\n        self._send_refund(order)\n\n    def refund(self, order):\n        # منطق refund...\n        pass\n\n    def _validate(self, data): ...\n    def _send_notification(self, order): ...\n    def _send_refund(self, order): ...\n```\n\n✅ درست / Correct:\n\n```python\nclass CreateOrderService:\n    def execute(self, user, validated_data):\n        return Order.objects.create(**validated_data, user=user)\n\n\nclass CancelOrderService:\n    def execute(self, order):\n        if order.status != OrderStatus.PENDING:\n            raise DomainError(\"Cannot cancel\")\n        order.status = OrderStatus.CANCELLED\n        order.save()\n        return order\n\n\nclass OrderNotificationService:\n    def send_created(self, order): ...\n    def send_cancelled(self, order): ...\n```\n\n---\n\n## Single Source of Truth (SSOT) — منبع یگانه حقیقت\n\n**توضیح:** هر منطق (مثل validation، محاسبه مالیات) باید در یک جا تعریف شود. تکرار در چند فایل نقض SSOT است.\n\n**Explanation:** Each logic (e.g., validation, tax calculation) must be defined in one place. Duplicating across files violates SSOT.\n\n❌ نادرست / Wrong:\n\n```python\n# در views.py\ndef create_order(request):\n    if request.user.profile.balance < 0:\n        raise ValidationError(\"No balance\")\n\n# در serializers.py — همان منطق تکرار شده!\nclass OrderSerializer(serializers.ModelSerializer):\n    def validate(self, attrs):\n        if self.context[\"request\"].user.profile.balance < 0:\n            raise ValidationError(\"No balance\")\n```\n\n✅ درست / Correct:\n\n```python\n# فقط در service — یک منبع حقیقت\nclass CreateOrderService:\n    def execute(self, user, validated_data):\n        if user.profile.balance < 0:\n            raise DomainError(\"موجودی کافی نیست / Insufficient balance\")\n        return Order.objects.create(**validated_data, user=user)\n\n\n# در serializer — فقط فراخوانی service\nclass OrderSerializer(serializers.ModelSerializer):\n    def create(self, validated_data):\n        return CreateOrderService().execute(\n            user=self.context[\"request\"].user,\n            validated_data=validated_data,\n        )\n```\n\n---\n\n## DRY — تکرار نکن\n\n**توضیح:** اگر منطق در دو جا تکرار شد، آن را به تابع یا کلاس واحد استخراج کن.\n\n**Explanation:** If logic is duplicated in two places, extract it into a single function or class.\n\n❌ نادرست / Wrong:\n\n```python\n# در چند جا تکرار شده\ndef register_user(email, password):\n    if len(password) < 8:\n        raise ValidationError(\"Password too short\")\n\ndef change_password(user, new_password):\n    if len(new_password) < 8:\n        raise ValidationError(\"Password too short\")\n```\n\n✅ درست / Correct:\n\n```python\nMIN_PASSWORD_LENGTH = 8\n\n\ndef validate_password(password: str) -> None:\n    if len(password) < MIN_PASSWORD_LENGTH:\n        raise ValidationError(\"رمز عبور حداقل ۸ کاراکتر باشد\")\n\n\ndef register_user(email: str, password: str):\n    validate_password(password)\n    # ...\n\n\ndef change_password(user, new_password: str):\n    validate_password(new_password)\n    # ...\n```\n\n---\n\n## Separation of Concerns (SoC) — جداسازی دغدغه‌ها\n\n**توضیح:** View فقط orchestration؛ Service برای business logic؛ Serializer فقط validation و serialization.\n\n**Explanation:** View only orchestrates; Service holds business logic; Serializer only validates and serializes.\n\n❌ نادرست / Wrong:\n\n```python\n# business logic در View\nclass OrderViewSet(ModelViewSet):\n    def create(self, request):\n        if request.user.profile.balance < 0:\n            raise ValidationError(\"No balance\")\n        order = Order.objects.create(\n            user=request.user,\n            total=request.data[\"total\"],\n        )\n        send_email(order.user.email, \"Order created\")\n        return Response(OrderSerializer(order).data)\n```\n\n✅ درست / Correct:\n\n```python\n# View فقط orchestration\nclass OrderViewSet(ModelViewSet):\n    def create(self, request):\n        serializer = self.get_serializer(data=request.data)\n        serializer.is_valid(raise_exception=True)\n        order = CreateOrderService().execute(\n            user=request.user,\n            validated_data=serializer.validated_data,\n        )\n        return Response(OrderSerializer(order).data, status=201)\n\n\n# Service — business logic\nclass CreateOrderService:\n    def execute(self, user, validated_data):\n        if user.profile.balance < 0:\n            raise DomainError(\"Insufficient balance\")\n        order = Order.objects.create(user=user, **validated_data)\n        OrderNotificationService().send_created(order)\n        return order\n```\n",
+        "raw": "---\ntitle: Design Principles\nsummary: Backend design principles and examples aligned with shared engineering principles\ndomain: backend\ncategory: core\napplies_to:\n  - \"backend/**/*.py\"\npriority: 50\nkind: principle\n---\n\n# Design Principles (اصول طراحی)\n\nراهنمای طراحی backend Django با مثال‌های عملی.\n\n**English:** Backend-focused design guidance for Django with practical examples.\n\n---\n\n## Shared Source of Truth\n\n- اصول عمومی (SSOT/SoC/DRY/KISS/YAGNI/Explicitness) در\n  `knowledge/shared/engineering-principles.md` تعریف شده‌اند.\n- اگر اختلافی وجود داشت، rule تخصصی backend در این فایل اولویت دارد.\n\n---\n\n## God Class (کلاس خدا) — نقض SRP\n\n**توضیح:** کلاسی که چندین مسئولیت دارد و باید به کلاس‌های کوچک‌تر تقسیم شود.\n\n**Explanation:** A class with multiple responsibilities that should be split into smaller, focused classes.\n\n❌ نادرست / Wrong:\n\n```python\nclass OrderManager:\n    \"\"\"همه کارها در یک کلاس — نقض SRP\"\"\"\n\n    def create(self, user, data):\n        self._validate(data)\n        order = Order.objects.create(**data, user=user)\n        self._send_notification(order)\n        return order\n\n    def cancel(self, order):\n        if order.status != \"PENDING\":\n            raise ValidationError(\"Cannot cancel\")\n        order.status = \"CANCELLED\"\n        order.save()\n        self._send_refund(order)\n\n    def refund(self, order):\n        # منطق refund...\n        pass\n\n    def _validate(self, data): ...\n    def _send_notification(self, order): ...\n    def _send_refund(self, order): ...\n```\n\n✅ درست / Correct:\n\n```python\nclass CreateOrderService:\n    def execute(self, user, validated_data):\n        return Order.objects.create(**validated_data, user=user)\n\n\nclass CancelOrderService:\n    def execute(self, order):\n        if order.status != OrderStatus.PENDING:\n            raise DomainError(\"Cannot cancel\")\n        order.status = OrderStatus.CANCELLED\n        order.save()\n        return order\n\n\nclass OrderNotificationService:\n    def send_created(self, order): ...\n    def send_cancelled(self, order): ...\n```\n\n---\n\n## Single Source of Truth (SSOT) — منبع یگانه حقیقت\n\n**توضیح:** هر منطق (مثل validation، محاسبه مالیات) باید در یک جا تعریف شود. تکرار در چند فایل نقض SSOT است.\n\n**Explanation:** Each logic (e.g., validation, tax calculation) must be defined in one place. Duplicating across files violates SSOT.\n\n❌ نادرست / Wrong:\n\n```python\n# در views.py\ndef create_order(request):\n    if request.user.profile.balance < 0:\n        raise ValidationError(\"No balance\")\n\n# در serializers.py — همان منطق تکرار شده!\nclass OrderSerializer(serializers.ModelSerializer):\n    def validate(self, attrs):\n        if self.context[\"request\"].user.profile.balance < 0:\n            raise ValidationError(\"No balance\")\n```\n\n✅ درست / Correct:\n\n```python\n# فقط در service — یک منبع حقیقت\nclass CreateOrderService:\n    def execute(self, user, validated_data):\n        if user.profile.balance < 0:\n            raise DomainError(\"موجودی کافی نیست / Insufficient balance\")\n        return Order.objects.create(**validated_data, user=user)\n\n\n# در serializer — فقط فراخوانی service\nclass OrderSerializer(serializers.ModelSerializer):\n    def create(self, validated_data):\n        return CreateOrderService().execute(\n            user=self.context[\"request\"].user,\n            validated_data=validated_data,\n        )\n```\n\n---\n\n## DRY — تکرار نکن\n\n**توضیح:** اگر منطق در دو جا تکرار شد، آن را به تابع یا کلاس واحد استخراج کن.\n\n**Explanation:** If logic is duplicated in two places, extract it into a single function or class.\n\n❌ نادرست / Wrong:\n\n```python\n# در چند جا تکرار شده\ndef register_user(email, password):\n    if len(password) < 8:\n        raise ValidationError(\"Password too short\")\n\ndef change_password(user, new_password):\n    if len(new_password) < 8:\n        raise ValidationError(\"Password too short\")\n```\n\n✅ درست / Correct:\n\n```python\nMIN_PASSWORD_LENGTH = 8\n\n\ndef validate_password(password: str) -> None:\n    if len(password) < MIN_PASSWORD_LENGTH:\n        raise ValidationError(\"رمز عبور حداقل ۸ کاراکتر باشد\")\n\n\ndef register_user(email: str, password: str):\n    validate_password(password)\n    # ...\n\n\ndef change_password(user, new_password: str):\n    validate_password(new_password)\n    # ...\n```\n\n---\n\n## Separation of Concerns (SoC) — جداسازی دغدغه‌ها\n\n**توضیح:** View فقط orchestration؛ Service برای business logic؛ Serializer فقط validation و serialization.\n\n**Explanation:** View only orchestrates; Service holds business logic; Serializer only validates and serializes.\n\n❌ نادرست / Wrong:\n\n```python\n# business logic در View\nclass OrderViewSet(ModelViewSet):\n    def create(self, request):\n        if request.user.profile.balance < 0:\n            raise ValidationError(\"No balance\")\n        order = Order.objects.create(\n            user=request.user,\n            total=request.data[\"total\"],\n        )\n        send_email(order.user.email, \"Order created\")\n        return Response(OrderSerializer(order).data)\n```\n\n✅ درست / Correct:\n\n```python\n# View فقط orchestration\nclass OrderViewSet(ModelViewSet):\n    def create(self, request):\n        serializer = self.get_serializer(data=request.data)\n        serializer.is_valid(raise_exception=True)\n        order = CreateOrderService().execute(\n            user=request.user,\n            validated_data=serializer.validated_data,\n        )\n        return Response(OrderSerializer(order).data, status=201)\n\n\n# Service — business logic\nclass CreateOrderService:\n    def execute(self, user, validated_data):\n        if user.profile.balance < 0:\n            raise DomainError(\"Insufficient balance\")\n        order = Order.objects.create(user=user, **validated_data)\n        OrderNotificationService().send_created(order)\n        return order\n```\n",
         "summary": "Design Principles",
         "key_points": [
           "- \"backend/**/*.py\"",
@@ -374,7 +374,7 @@
           "(ssot/soc/dry/kiss/yagni/explicitness)",
           "(اصول",
           "**english:**",
-          "`.cursor/rules/share/enginee",
+          "`knowledge/shared/engineerin",
           "aligned",
           "applies_to:",
           "backend",
@@ -403,7 +403,7 @@
         "depends_on": [],
         "related": []
       },
-      "checksum": "34a8492b66e049aecfc9b5a44ccbfa35032c2423a7e3bc571394b42179fcf73c"
+      "checksum": "80117b0aeef8be70ab588ef6c1cb21ebcbfb4df82db032536ca40cb127d261f9"
     },
     {
       "type": "knowledge_ir",
@@ -717,7 +717,7 @@
       "category": "patterns",
       "kind": "reference",
       "content": {
-        "raw": "---\ntitle: Anti Patterns\nsummary: Anti-Patterns — God class، magic numbers، fat serializers، business logic in views\ndomain: backend\ncategory: patterns\napplies_to:\n  - \"backend/**/*.py\"\npriority: 50\nkind: reference\n---\n\n# Anti-Patterns\n\nقاعده‌های عمومی anti-pattern در\n`.cursor/rules/share/code-quality-baseline.mdc`\nتعریف شده‌اند. موارد این فایل مکمل backend هستند.\n\n* **God class** — کلاسی که همه کارها را انجام می‌دهد\n* **Magic numbers** — از constants استفاده کن\n* **Circular dependencies** — وابستگی دایره‌ای ممنوع\n* **Fat serializers** — منطق تجاری در Serializer نگذار\n* **Business logic in views** — View فقط orchestration\n* **Hard-coded secrets** — secrets فقط در env\n* **Raw SQL با string concatenation** — همیشه از ORM\n* **Premature optimization** — فقط بعد از measurement\n",
+        "raw": "---\ntitle: Anti Patterns\nsummary: Anti-Patterns — God class، magic numbers، fat serializers، business logic in views\ndomain: backend\ncategory: patterns\napplies_to:\n  - \"backend/**/*.py\"\npriority: 50\nkind: reference\n---\n\n# Anti-Patterns\n\nقاعده‌های عمومی anti-pattern در\n`knowledge/shared/code-quality-baseline.md`\nتعریف شده‌اند. موارد این فایل مکمل backend هستند.\n\n* **God class** — کلاسی که همه کارها را انجام می‌دهد\n* **Magic numbers** — از constants استفاده کن\n* **Circular dependencies** — وابستگی دایره‌ای ممنوع\n* **Fat serializers** — منطق تجاری در Serializer نگذار\n* **Business logic in views** — View فقط orchestration\n* **Hard-coded secrets** — secrets فقط در env\n* **Raw SQL با string concatenation** — همیشه از ORM\n* **Premature optimization** — فقط بعد از measurement\n",
         "summary": "Anti Patterns",
         "key_points": [
           "- \"backend/**/*.py\""
@@ -736,7 +736,7 @@
           "**circular",
           "**god",
           "**magic",
-          "`.cursor/rules/share/code-quality-baseline.mdc`",
+          "`knowledge/shared/code-quality-baseline.md`",
           "anti",
           "anti-pattern",
           "anti-patterns",
@@ -765,7 +765,7 @@
         "depends_on": [],
         "related": []
       },
-      "checksum": "9484e99b03073087aac48709dc88beec0f86c68d3007da4446231473fcc8db41"
+      "checksum": "79ae542f83eb80cc23887a4c98bb020a43e1df306b0e87584d33261d035454e6"
     },
     {
       "type": "knowledge_ir",
@@ -1649,7 +1649,7 @@
       "category": "core",
       "kind": "reference",
       "content": {
-        "raw": "---\ntitle: Code Quality\nsummary: Code quality standards, naming conventions, and documentation requirements for frontend (Vue 3, .vue, .js)\ndomain: frontend\ncategory: core\napplies_to:\n  - \"frontend/src/**/*.vue\"\n  - \"frontend/src/**/*.js\"\n  - \"frontend/src/**/*.css\"\npriority: 50\nkind: reference\n---\n\n# Code Quality Standards\n\n## Shared Baseline\n\n- baseline عمومی کیفیت کد در:\n  `.cursor/rules/share/code-quality-baseline.mdc`\n- این فایل فقط جزئیات اختصاصی frontend را تعریف می‌کند.\n\n## Component Quality Checklist\n\n- [ ] **Reusable:** کامپوننت قابل استفاده مجدد است؟\n- [ ] **Props Typed:** props با JSDoc یا validator مستند شده؟\n- [ ] **Emits:** custom emits مستند شده؟\n- [ ] **Scoped Styles:** styles scoped هستند یا global conflicts ندارند؟\n- [ ] **No Side Effects:** کامپوننت isolated و بدون side effects ناخواسته؟\n- [ ] **Size:** کامپوننت کمتر از 200 خط؟\n\n## قراردادهای نام‌گذاری\n\n### فایل‌ها\n- ✅ Components: **PascalCase** (`Button.vue`, `UserCard.vue`)\n- ✅ Utilities: **camelCase** (`formatDate.js`, `validators.js`)\n- ✅ Stores (Pinia): **camelCase** (`auth.js`, `vehicle.js`)\n- ✅ Services: **camelCase** (`dashboardService.js`, `serviceTypeService.js`)\n- ✅ Styles: **kebab-case** (`global.css`, `reset.css`)\n- ✅ Constants: **UPPER_SNAKE_CASE** (`API_BASE_URL.js`, `COLORS.js`)\n\n### متغیرها و توابع\n- از camelCase برای متغیرها و توابع استفاده کن: `userName`, `getUserData()`\n- از نام‌های توصیفی استفاده کن: `isLoading` به جای `loading`, `handleSubmit` به جای `submit`\n- برای متغیرهای بولین، از پیشوندهای is/has/can استفاده کن: `isVisible`, `hasError`, `canEdit`\n\n### CSS\n- از BEM (Block Element Modifier) استفاده کن: `.card__title--highlighted`\n- از kebab-case برای نام کلاس‌ها استفاده کن: `.user-profile`, `.search-box`\n- از پیشوندهای خاص برای جلوگیری از تداخل: `.c-button` (c برای component), `.u-hidden` (u برای utility)\n\n### کامپوننت‌ها\n- از نام‌های توصیفی استفاده کن: `UserProfile` به جای `User`, `SearchBox` به جای `Search`\n- برای کامپوننت‌های UI پایه: `Button.vue`, `Input.vue`, `Modal.vue`\n- برای کامپوننت‌های feature: `UserCard.vue`, `ServiceTypeSelector.vue`\n\n## Code Smells\n\n**کامپوننت‌های مشکوک:**\n- کامپوننت‌های بیش از 200 خط\n- کامپوننت‌هایی که هم state management و هم UI rendering دارند\n- نام‌های ترکیبی: `UserProfileFormWithValidation`\n\n## Documentation Requirements\n\nهر کامپوننت باید شامل:\n- File header (توضیح فارسی در صورت نیاز)\n- Props مستند شده (JSDoc یا defineProps با type)\n- Emits مستند شده\n- نحوه استفاده\n",
+        "raw": "---\ntitle: Code Quality\nsummary: Code quality standards, naming conventions, and documentation requirements for frontend (Vue 3, .vue, .js)\ndomain: frontend\ncategory: core\napplies_to:\n  - \"frontend/src/**/*.vue\"\n  - \"frontend/src/**/*.js\"\n  - \"frontend/src/**/*.css\"\npriority: 50\nkind: reference\n---\n\n# Code Quality Standards\n\n## Shared Baseline\n\n- baseline عمومی کیفیت کد در:\n  `knowledge/shared/code-quality-baseline.md`\n- این فایل فقط جزئیات اختصاصی frontend را تعریف می‌کند.\n\n## Component Quality Checklist\n\n- [ ] **Reusable:** کامپوننت قابل استفاده مجدد است؟\n- [ ] **Props Typed:** props با JSDoc یا validator مستند شده؟\n- [ ] **Emits:** custom emits مستند شده؟\n- [ ] **Scoped Styles:** styles scoped هستند یا global conflicts ندارند؟\n- [ ] **No Side Effects:** کامپوننت isolated و بدون side effects ناخواسته؟\n- [ ] **Size:** کامپوننت کمتر از 200 خط؟\n\n## قراردادهای نام‌گذاری\n\n### فایل‌ها\n- ✅ Components: **PascalCase** (`Button.vue`, `UserCard.vue`)\n- ✅ Utilities: **camelCase** (`formatDate.js`, `validators.js`)\n- ✅ Stores (Pinia): **camelCase** (`auth.js`, `vehicle.js`)\n- ✅ Services: **camelCase** (`dashboardService.js`, `serviceTypeService.js`)\n- ✅ Styles: **kebab-case** (`global.css`, `reset.css`)\n- ✅ Constants: **UPPER_SNAKE_CASE** (`API_BASE_URL.js`, `COLORS.js`)\n\n### متغیرها و توابع\n- از camelCase برای متغیرها و توابع استفاده کن: `userName`, `getUserData()`\n- از نام‌های توصیفی استفاده کن: `isLoading` به جای `loading`, `handleSubmit` به جای `submit`\n- برای متغیرهای بولین، از پیشوندهای is/has/can استفاده کن: `isVisible`, `hasError`, `canEdit`\n\n### CSS\n- از BEM (Block Element Modifier) استفاده کن: `.card__title--highlighted`\n- از kebab-case برای نام کلاس‌ها استفاده کن: `.user-profile`, `.search-box`\n- از پیشوندهای خاص برای جلوگیری از تداخل: `.c-button` (c برای component), `.u-hidden` (u برای utility)\n\n### کامپوننت‌ها\n- از نام‌های توصیفی استفاده کن: `UserProfile` به جای `User`, `SearchBox` به جای `Search`\n- برای کامپوننت‌های UI پایه: `Button.vue`, `Input.vue`, `Modal.vue`\n- برای کامپوننت‌های feature: `UserCard.vue`, `ServiceTypeSelector.vue`\n\n## Code Smells\n\n**کامپوننت‌های مشکوک:**\n- کامپوننت‌های بیش از 200 خط\n- کامپوننت‌هایی که هم state management و هم UI rendering دارند\n- نام‌های ترکیبی: `UserProfileFormWithValidation`\n\n## Documentation Requirements\n\nهر کامپوننت باید شامل:\n- File header (توضیح فارسی در صورت نیاز)\n- Props مستند شده (JSDoc یا defineProps با type)\n- Emits مستند شده\n- نحوه استفاده\n",
         "summary": "Code Quality",
         "key_points": [
           "- \"frontend/src/**/*.vue\"",
@@ -1700,7 +1700,7 @@
           "(vue",
           ".js)",
           ".vue,",
-          "`.cursor/rules/share/code-quality-baseline.mdc`",
+          "`knowledge/shared/code-quality-baseline.md`",
           "applies_to:",
           "baseline",
           "category:",
@@ -1729,7 +1729,7 @@
         "depends_on": [],
         "related": []
       },
-      "checksum": "9270852dcd2d31c9f03ff238e03e5540c17834ce4f3ee0361ed24bde3cac9201"
+      "checksum": "d02e5fdc7d2a87ac9b49f7aaafaf544757e702cf6e7bdc2ee090c6f771412423"
     },
     {
       "type": "knowledge_ir",
@@ -1739,7 +1739,7 @@
       "category": "core",
       "kind": "principle",
       "content": {
-        "raw": "---\ntitle: Meta Principles\nsummary: Meta-principles and fundamental design principles underlying all frontend development rules\ndomain: frontend\ncategory: core\napplies_to:\n  - \"frontend/src/**/*.vue\"\n  - \"frontend/src/**/*.js\"\n  - \"frontend/src/**/*.css\"\npriority: 50\nkind: principle\n---\n\n# Meta-Principles\n\nاصول پایه frontend. اصول جهان‌شمول در فایل اشتراکی تعریف شده‌اند:\n`.cursor/rules/share/engineering-principles.mdc`\n\nاگر اختلافی وجود داشت، rule تخصصی frontend در این فایل اولویت دارد.\n\n## Frontend-Specific Principles\n\n### Single Source of Truth در UI\n- برای تصمیم‌های طراحی از design tokens و CSS variables استفاده کن.\n- منبع مقادیر design باید مرکزی و قابل ردیابی باشد.\n\n### Component Reusability\n- کامپوننت‌ها isolated و self-contained باشند.\n- از props/slots برای customization استفاده کن.\n- وابستگی مستقیم به context خاص parent ایجاد نکن.\n\n### Progressive Enhancement\n- HTML/CSS پایه باید بدون JavaScript نیز قابل استفاده باشد.\n- فرم‌ها باید با HTML5 validation کار کنند.\n\n### Mobile-First Design\n- base styles بدون media query (موبایل) باشند.\n- media queryها فقط `min-width` باشند.\n- touch targets حداقل `44x44px` رعایت شوند.\n\n### Accessibility First\n- semantic HTML همیشه اولویت دارد.\n- ARIA فقط وقتی semantic کافی نیست استفاده شود.\n- همه عناصر تعاملی باید keyboard-accessible باشند.\n\n### Performance First (Frontend)\n- lazy loading برای محتوای off-screen.\n- code splitting برای routeها.\n- بهینه‌سازی image/font پیش‌فرض باشد.\n",
+        "raw": "---\ntitle: Meta Principles\nsummary: Meta-principles and fundamental design principles underlying all frontend development rules\ndomain: frontend\ncategory: core\napplies_to:\n  - \"frontend/src/**/*.vue\"\n  - \"frontend/src/**/*.js\"\n  - \"frontend/src/**/*.css\"\npriority: 50\nkind: principle\n---\n\n# Meta-Principles\n\nاصول پایه frontend. اصول جهان‌شمول در فایل اشتراکی تعریف شده‌اند:\n`knowledge/shared/engineering-principles.md`\n\nاگر اختلافی وجود داشت، rule تخصصی frontend در این فایل اولویت دارد.\n\n## Frontend-Specific Principles\n\n### Single Source of Truth در UI\n- برای تصمیم‌های طراحی از design tokens و CSS variables استفاده کن.\n- منبع مقادیر design باید مرکزی و قابل ردیابی باشد.\n\n### Component Reusability\n- کامپوننت‌ها isolated و self-contained باشند.\n- از props/slots برای customization استفاده کن.\n- وابستگی مستقیم به context خاص parent ایجاد نکن.\n\n### Progressive Enhancement\n- HTML/CSS پایه باید بدون JavaScript نیز قابل استفاده باشد.\n- فرم‌ها باید با HTML5 validation کار کنند.\n\n### Mobile-First Design\n- base styles بدون media query (موبایل) باشند.\n- media queryها فقط `min-width` باشند.\n- touch targets حداقل `44x44px` رعایت شوند.\n\n### Accessibility First\n- semantic HTML همیشه اولویت دارد.\n- ARIA فقط وقتی semantic کافی نیست استفاده شود.\n- همه عناصر تعاملی باید keyboard-accessible باشند.\n\n### Performance First (Frontend)\n- lazy loading برای محتوای off-screen.\n- code splitting برای routeها.\n- بهینه‌سازی image/font پیش‌فرض باشد.\n",
         "summary": "Meta Principles",
         "key_points": [
           "- \"frontend/src/**/*.vue\"",
@@ -1784,14 +1784,13 @@
           "\"frontend/src/**/*.css\"",
           "\"frontend/src/**/*.js\"",
           "\"frontend/src/**/*.vue\"",
-          "`.cursor/rules/share/engineering-principles.mdc`",
+          "`knowledge/shared/engineering-principles.md`",
           "applies_to:",
           "category:",
           "core",
           "design",
           "development",
           "domain:",
-          "fron",
           "frontend",
           "frontend.",
           "fundamental",
@@ -1800,7 +1799,8 @@
           "meta-principles",
           "principle",
           "principles",
-          "priority:"
+          "priority:",
+          "rule"
         ]
       },
       "priority": 50,
@@ -1816,7 +1816,7 @@
         "depends_on": [],
         "related": []
       },
-      "checksum": "4aa3dbcc74687cc38aed1a34cca2658b6390a79c8d8e9b595a51ac84ed9f0713"
+      "checksum": "cba31f9fa49625952effebc3dba2a318495192328431b4ae9394448f649b99ba"
     },
     {
       "type": "knowledge_ir",
@@ -1826,7 +1826,7 @@
       "category": "patterns",
       "kind": "reference",
       "content": {
-        "raw": "---\ntitle: Anti Patterns\nsummary: Common anti-patterns in frontend development and their correct solutions\ndomain: frontend\ncategory: patterns\napplies_to:\n  - \"frontend/src/**/*.vue\"\n  - \"frontend/src/**/*.js\"\npriority: 50\nkind: reference\n---\n\n# Anti-Patterns\n\nقاعده‌های عمومی anti-pattern در\n`.cursor/rules/share/code-quality-baseline.mdc`\nتعریف شده‌اند. این فایل فقط anti-patternهای اختصاصی frontend را پوشش می‌دهد.\n\n## Prop Drilling\n\n❌ **Bad:** Prop drilling عمیق (>3 سطح)\n- Props را از parent به child به grandchild می‌فرستی\n\n✅ **Good:** استفاده از Pinia store\n- Shared state در store نگه دار\n- مستقیماً در کامپوننت‌ها با store استفاده کن\n\n## Massive Components\n\n❌ **Bad:** کامپوننت 500+ خطی\n- همه چیز در یک فایل\n\n✅ **Good:** تقسیم به کامپوننت‌های کوچک\n- Single Responsibility Principle\n- Composable components\n\n## Inline Styles Everywhere\n\n❌ **Bad:** استفاده زیاد از inline styles\n- Hard to maintain\n- No reusability\n\n✅ **Good:** Scoped styles\n- `<style scoped>` یا CSS classes\n- CSS Custom Properties\n\n## No Loading States\n\n❌ **Bad:** بدون loading indicator\n- کاربر منتظر می‌ماند بدون feedback\n\n✅ **Good:** Loading states\n- Spinner یا skeleton screen\n- Clear feedback\n\n## Global State Abuse\n\n❌ **Bad:** همه چیز در Pinia store\n- UI states که فقط local باید باشند\n\n✅ **Good:** Local state برای UI\n- Pinia فقط برای shared data\n- ref/reactive در component برای UI-specific state\n",
+        "raw": "---\ntitle: Anti Patterns\nsummary: Common anti-patterns in frontend development and their correct solutions\ndomain: frontend\ncategory: patterns\napplies_to:\n  - \"frontend/src/**/*.vue\"\n  - \"frontend/src/**/*.js\"\npriority: 50\nkind: reference\n---\n\n# Anti-Patterns\n\nقاعده‌های عمومی anti-pattern در\n`knowledge/shared/code-quality-baseline.md`\nتعریف شده‌اند. این فایل فقط anti-patternهای اختصاصی frontend را پوشش می‌دهد.\n\n## Prop Drilling\n\n❌ **Bad:** Prop drilling عمیق (>3 سطح)\n- Props را از parent به child به grandchild می‌فرستی\n\n✅ **Good:** استفاده از Pinia store\n- Shared state در store نگه دار\n- مستقیماً در کامپوننت‌ها با store استفاده کن\n\n## Massive Components\n\n❌ **Bad:** کامپوننت 500+ خطی\n- همه چیز در یک فایل\n\n✅ **Good:** تقسیم به کامپوننت‌های کوچک\n- Single Responsibility Principle\n- Composable components\n\n## Inline Styles Everywhere\n\n❌ **Bad:** استفاده زیاد از inline styles\n- Hard to maintain\n- No reusability\n\n✅ **Good:** Scoped styles\n- `<style scoped>` یا CSS classes\n- CSS Custom Properties\n\n## No Loading States\n\n❌ **Bad:** بدون loading indicator\n- کاربر منتظر می‌ماند بدون feedback\n\n✅ **Good:** Loading states\n- Spinner یا skeleton screen\n- Clear feedback\n\n## Global State Abuse\n\n❌ **Bad:** همه چیز در Pinia store\n- UI states که فقط local باید باشند\n\n✅ **Good:** Local state برای UI\n- Pinia فقط برای shared data\n- ref/reactive در component برای UI-specific state\n",
         "summary": "Anti Patterns",
         "key_points": [
           "- \"frontend/src/**/*.vue\"",
@@ -1869,13 +1869,14 @@
           "\"frontend/src/**/*.js\"",
           "\"frontend/src/**/*.vue\"",
           "**bad:**",
-          "`.cursor/rules/share/code-quality-baseline.mdc`",
+          "`knowledge/shared/code-quality-baseline.md`",
           "anti",
           "anti-pattern",
           "anti-patterns",
           "anti-patternهای",
           "applies_to:",
           "category:",
+          "chil",
           "common",
           "correct",
           "development",
@@ -1884,8 +1885,7 @@
           "frontend",
           "kind:",
           "parent",
-          "patterns",
-          "priority:"
+          "patterns"
         ]
       },
       "priority": 50,
@@ -1900,7 +1900,7 @@
         "depends_on": [],
         "related": []
       },
-      "checksum": "16941e0834d17ec1b60293a719d4b70cf5efd643bb34e22ae10a04d1063b7df5"
+      "checksum": "d5e57febec767f36a2aa010b23b28ef2134e652688ce615d3f77f54e5576b924"
     },
     {
       "type": "knowledge_ir",
@@ -2251,7 +2251,7 @@
       "category": "performance",
       "kind": "rule",
       "content": {
-        "raw": "---\ntitle: Asset Management\nsummary: Asset management rules for images, fonts, icons including formats, responsive images, lazy loading, and caching strategies\ndomain: frontend\ncategory: performance\napplies_to:\n  - \"frontend/src/**/*.vue\"\n  - \"frontend/src/**/*.js\"\n  - \"frontend/src/**/*.css\"\npriority: 50\nkind: rule\n---\n\n# Asset Management Rules\n\n## مدیریت بارگذاری تصاویر\n\n### Formats\n- از WebP برای تصاویر استفاده کن\n- از AVIF برای تصاویر با کیفیت بالا استفاده کن\n- از fallback formats استفاده کن\n\n### Responsive Images\n- از `srcset` استفاده کن\n- از `sizes` استفاده کن\n- از `picture` element استفاده کن\n\n### Lazy Loading\n- از native lazy loading استفاده کن\n- از Intersection Observer استفاده کن\n- از placeholder images استفاده کن\n\n## مدیریت فونت‌ها\n\n### Font Loading\n- از font-display: swap استفاده کن\n- از preload برای critical fonts استفاده کن\n- از font subsetting استفاده کن\n\n### Font Formats\n- از WOFF2 استفاده کن\n- از WOFF به عنوان fallback استفاده کن\n- از system fonts در صورت امکان استفاده کن\n\n## مدیریت آیکون‌ها\n\n### SVG Icons\n- از SVG برای آیکون‌ها استفاده کن\n- از SVG sprite استفاده کن\n- از icon components استفاده کن\n\n### Icon Fonts\n- از icon fonts برای آیکون‌های متعدد استفاده کن\n- از subsetting استفاده کن\n- از fallback استفاده کن\n\n## قوانین\n\n### Optimization\n- از image optimization استفاده کن\n- از compression استفاده کن\n- برای این پروژه از CDN اینترنتی استفاده نکن؛ از نسخه محلی/آفلاین استفاده کن (ر.ک. `share/offline-no-cdn-policy.mdc`)\n\n### Caching\n- از proper cache headers استفاده کن\n- از cache busting استفاده کن\n- از versioning استفاده کن\n\n### Loading Strategy\n- از critical assets first استفاده کن\n- از preload برای critical resources استفاده کن\n- از prefetch برای future resources استفاده کن\n",
+        "raw": "---\ntitle: Asset Management\nsummary: Asset management rules for images, fonts, icons including formats, responsive images, lazy loading, and caching strategies\ndomain: frontend\ncategory: performance\napplies_to:\n  - \"frontend/src/**/*.vue\"\n  - \"frontend/src/**/*.js\"\n  - \"frontend/src/**/*.css\"\npriority: 50\nkind: rule\n---\n\n# Asset Management Rules\n\n## مدیریت بارگذاری تصاویر\n\n### Formats\n- از WebP برای تصاویر استفاده کن\n- از AVIF برای تصاویر با کیفیت بالا استفاده کن\n- از fallback formats استفاده کن\n\n### Responsive Images\n- از `srcset` استفاده کن\n- از `sizes` استفاده کن\n- از `picture` element استفاده کن\n\n### Lazy Loading\n- از native lazy loading استفاده کن\n- از Intersection Observer استفاده کن\n- از placeholder images استفاده کن\n\n## مدیریت فونت‌ها\n\n### Font Loading\n- از font-display: swap استفاده کن\n- از preload برای critical fonts استفاده کن\n- از font subsetting استفاده کن\n\n### Font Formats\n- از WOFF2 استفاده کن\n- از WOFF به عنوان fallback استفاده کن\n- از system fonts در صورت امکان استفاده کن\n\n## مدیریت آیکون‌ها\n\n### SVG Icons\n- از SVG برای آیکون‌ها استفاده کن\n- از SVG sprite استفاده کن\n- از icon components استفاده کن\n\n### Icon Fonts\n- از icon fonts برای آیکون‌های متعدد استفاده کن\n- از subsetting استفاده کن\n- از fallback استفاده کن\n\n## قوانین\n\n### Optimization\n- از image optimization استفاده کن\n- از compression استفاده کن\n- برای این پروژه از CDN اینترنتی استفاده نکن؛ از نسخه محلی/آفلاین استفاده کن (ر.ک. `knowledge/shared/offline-no-cdn-policy.md`)\n\n### Caching\n- از proper cache headers استفاده کن\n- از cache busting استفاده کن\n- از versioning استفاده کن\n\n### Loading Strategy\n- از critical assets first استفاده کن\n- از preload برای critical resources استفاده کن\n- از prefetch برای future resources استفاده کن\n",
         "summary": "Asset Management",
         "key_points": [
           "- \"frontend/src/**/*.vue\"",
@@ -2336,7 +2336,7 @@
         "depends_on": [],
         "related": []
       },
-      "checksum": "7c06eed9121c150a67655a0bb71da6660f7989ab56ef93b3ed2f154d99636337"
+      "checksum": "c90bb018a9a170ab027992c629ae3118a1764d1ec5f209683b33d9adc3230c2f"
     },
     {
       "type": "knowledge_ir",
@@ -3679,154 +3679,6 @@
     },
     {
       "type": "knowledge_ir",
-      "id": "ai-feature-implementation-guide",
-      "source": "knowledge/shared/ai-feature-implementation-guide.md",
-      "domain": "shared",
-      "category": "ai-workflow",
-      "kind": "workflow",
-      "content": {
-        "raw": "# AI-Assisted Feature Implementation Guide\n\n> A systematic, repeatable process for Django/Python engineers to use AI \n> effectively across the full feature development lifecycle.\n\n---\n\n## How to Use This Guide\n\nThis process is split into **two chats** — one for thinking, one for building.\nEach chat has clear inputs and outputs. Never skip the handoff step.\n\n```\nCHAT 1 — THINK                        CHAT 2 — BUILD\n───────────────────────────────────   ───────────────────────────────────\nStep 1:  Requirement Clarification    Step 4:  Implementation\nStep 2:  Feature Specification        Step 5:  Self-Review\nStep 3:  Technical Design             Step 6:  Test Generation\n                                      Step 7:  Integration Check\n\nOUTPUT: Two .md files                 INPUT:  Those two .md files\n  - feature_spec.md                           + codebase context\n  - implementation_plan.md\n```\n\n---\n\n## File Structure\n\nStore all generated documents in version control alongside your code:\n\n```\nyour-django-project/\n└── ai-documents/\n    └── features/\n        └── <feature-name>/\n            ├── feature_spec.md\n            ├── implementation_plan.md\n            └── integration_check.md\n```\n\n**Naming convention:** Use the Django app name or main model the feature touches.\nExamples: `user-authentication`, `payment-processing`, `llm-summary-service`\n\n**Commit these files.** They are the living documentation of why your code works\nthe way it does. If a feature is significantly changed later, either update the\nspec or create a new folder: `user-authentication-v2`.\n\n---\n\n## Service Types\n\nYour features fall into three types. You will declare the type in each prompt —\nit changes what questions get asked and what rules apply.\n\n| Type | Description |\n|---|---|\n| 🗄️ DB-BACKED SERVICE | Django models, ORM, migrations, transactions |\n| 🧠 INTELLIGENT SERVICE | LLM integrations, prompt chains, pipelines |\n| 🌐 AUTOMATION SERVICE | Selenium, browser automation, web interactions |\n\n---\n\n## CHAT 1 — THINK\n\n---\n\n### Step 1: Requirement Clarification\n\n**Purpose:** Surface ambiguities and edge cases before any design or code is written.\n\n**Input:** Your user story + service type\n**Output:** A numbered list of clarifying questions — answer all of them before Step 2\n\n```\nYou are a senior software engineer doing a requirement review before implementation.\n\n## Service Type\n[DB-BACKED SERVICE | INTELLIGENT SERVICE | AUTOMATION SERVICE]\n\n## User Story\n[PASTE USER STORY HERE]\n\n## Additional Context\n[Any extra notes, constraints, or background]\n\n---\n\nYour job is NOT to write code yet.\n\nBased on the service type and user story above, ask me the most important\nclarifying questions a senior engineer would ask before starting implementation.\n\nFocus your questions on:\n\nIf DB-BACKED SERVICE:\n- Data model ambiguities (relationships, nullable fields, uniqueness)\n- Business rule edge cases\n- Read/write performance expectations\n- What happens on failure or partial completion\n\nIf INTELLIGENT SERVICE:\n- What is the exact input and expected output format\n- Which LLM / model is being used, or is it flexible\n- How should hallucinations or low-confidence outputs be handled\n- Latency and cost sensitivity\n- Does the output feed into another system\n\nIf AUTOMATION SERVICE:\n- What triggers this automation (scheduled, on-demand, event-driven)\n- How to handle failures mid-flow (partial completion, retries)\n- Are there login/auth steps involved\n- What does success/failure look like and how is it reported\n- Are there rate limiting or anti-bot concerns\n\nFor ALL service types also ask about:\n- Who are the consumers of this service (internal, external, other devs)\n- Are there existing similar patterns in the codebase to follow\n- What is out of scope for this feature\n\nReturn a numbered list of questions only. No code, no suggestions yet.\n```\n\n**After this step:** Answer every question in the chat before proceeding to Step 2.\n\n---\n\n### Step 2: Feature Specification\n\n**Purpose:** Formally capture what the feature must do in precise, testable language.\nWritten now — while requirements are freshest — so that the technical design in\nStep 3 is driven by the spec, not the other way around.\n\n**Input:** Answered questions from Step 1 (already in chat context)\n**Output:** `feature_spec.md`\n\n```\nBased on our requirements discussion, generate a feature specification\nfile called `feature_spec.md`.\n\nThis file has two jobs:\n1. It drives the technical design in the next step\n2. It will be used in Chat 2 to generate tests\n\nSo it must capture behavior precisely — not architecture, not code,\njust what the feature does and how it should behave in every scenario.\n\n---\n\n## File Structure\n\n### 1. Feature Overview\n- One paragraph summary of what this feature does and why it exists\n- The service type (DB-backed / Intelligent / Automation)\n- Primary consumers of this feature (who or what calls it)\n\n### 2. Inputs & Outputs\n- Every input this feature accepts: name, type, required/optional, constraints\n- Every output this feature returns: shape, type, and what each field means\n- If it's an API endpoint, include the request/response contract\n\n### 3. Business Rules\nA numbered list of explicit rules the feature must enforce.\nEach rule should be a single, testable statement. Examples:\n- \"A user cannot submit a request if their account is inactive\"\n- \"If the LLM returns malformed JSON, the service must retry up to 3 times\"\n- \"A task must not be marked complete if any of its subtasks are still pending\"\n\n### 4. Acceptance Scenarios\nWritten in plain language, not code. For each scenario use this format:\n\n**Scenario [N]: [Short name]**\n- Given: [initial state or context]\n- When: [the action or input]\n- Then: [the expected outcome]\n\nCover these scenario types:\n- Happy path (the normal successful flow)\n- Edge cases (boundary values, empty inputs, minimum/maximum)\n- Failure cases (what happens when things go wrong)\n- For intelligent services: unexpected or malformed LLM output\n- For automation services: mid-flow failures, element not found, timeouts\n\n### 5. Out of Scope\nExplicitly list what this feature does NOT handle.\nThis prevents scope creep in both implementation and tests.\n\n---\n\n## Rules for Writing This Spec\n- Every statement must be testable — if you can't write a test for it, rewrite it\n- No implementation details — say WHAT, never HOW\n- No ambiguous language — avoid \"should handle gracefully\",\n  instead say exactly what happens\n- If something is still ambiguous, flag it with: ⚠️ OPEN QUESTION: [question]\n  rather than making an assumption silently\n```\n\n**After this step:** Read `feature_spec.md` carefully and resolve any\n`⚠️ OPEN QUESTION` items before moving to Step 3.\n\n---\n\n### Step 3: Technical Design\n\n**Purpose:** Decide how to build what the spec describes. The design is explicitly\ndriven by `feature_spec.md` — not the other way around.\n\n**Input:** `feature_spec.md` (already in chat context)\n**Output:** `implementation_plan.md`\n\n```\nUsing feature_spec.md as the source of truth, produce a technical design\nfor this feature and write it to a file called `implementation_plan.md`.\n\nDo NOT write implementation code yet.\n\n---\n\n## Phase 1 — Design Brief\nFirst, present the design for my review with these sections:\n\n### 1. Service Architecture\n- What functions/classes/modules need to be created or modified\n- How they relate to each other (call flow)\n- Where this fits in the existing project structure\n\n### 2. Data Layer (skip if not applicable)\n- New or modified Django models\n- Key fields, relationships, and constraints to be aware of\n- Whether any migrations have non-trivial risk\n\n### 3. External Dependencies\n- Any new libraries, APIs, or services needed\n- LLM model/tools if this is an intelligent service\n- Browser/driver considerations if this is an automation service\n\n### 4. Error Handling Strategy\n- What can go wrong at each major step\n- How failures should be surfaced (exception, return value, logging)\n\n### 5. Open Questions / Risks\n- Anything s",
-        "summary": "AI-Assisted Feature Implementation Guide",
-        "key_points": [
-          "- feature_spec.md                           + codebase context",
-          "- implementation_plan.md",
-          "**Naming convention:** Use the Django app name or main model the feature touches.",
-          "**Commit these files.** They are the living documentation of why your code works",
-          "**Purpose:** Surface ambiguities and edge cases before any design or code is written.",
-          "**Input:** Your user story + service type",
-          "**Output:** A numbered list of clarifying questions — answer all of them before Step 2",
-          "- Data model ambiguities (relationships, nullable fields, uniqueness)",
-          "- Business rule edge cases",
-          "- Read/write performance expectations",
-          "- What happens on failure or partial completion",
-          "- What is the exact input and expected output format",
-          "- Which LLM / model is being used, or is it flexible",
-          "- How should hallucinations or low-confidence outputs be handled",
-          "- Latency and cost sensitivity",
-          "- Does the output feed into another system",
-          "- What triggers this automation (scheduled, on-demand, event-driven)",
-          "- How to handle failures mid-flow (partial completion, retries)",
-          "- Are there login/auth steps involved",
-          "- What does success/failure look like and how is it reported"
-        ],
-        "sections": [
-          "# AI-Assisted Feature Implementation Guide",
-          "## How to Use This Guide",
-          "## File Structure",
-          "## Service Types",
-          "## CHAT 1 — THINK",
-          "### Step 1: Requirement Clarification",
-          "## Service Type",
-          "## User Story",
-          "## Additional Context",
-          "### Step 2: Feature Specification",
-          "## File Structure",
-          "### 1. Feature Overview",
-          "### 2. Inputs & Outputs",
-          "### 3. Business Rules",
-          "### 4. Acceptance Scenarios",
-          "### 5. Out of Scope",
-          "## Rules for Writing This Spec",
-          "### Step 3: Technical Design",
-          "## Phase 1 — Design Brief",
-          "### 1. Service Architecture",
-          "### 2. Data Layer (skip if not applicable)",
-          "### 3. External Dependencies",
-          "### 4. Error Handling Strategy",
-          "### 5. Open Questions / Risks",
-          "## Phase 2 — Write the Plan",
-          "# Implementation Plan — [Feature Name]",
-          "## Architecture Summary",
-          "## Implementation Steps",
-          "## Key Decisions & Assumptions",
-          "## Open Questions",
-          "## CHAT 2 — BUILD",
-          "### Handoff Prompt (Always Start Chat 2 With This)",
-          "### Step 4: Implementation",
-          "## Execution Rules",
-          "## Implementation Rules",
-          "### General",
-          "### Error Handling",
-          "### Django-Specific (skip if not applicable)",
-          "### Intelligent Service-Specific (skip if not applicable)",
-          "### Automation Service-Specific (skip if not applicable)",
-          "## Output Format Per Step",
-          "# ---- REVIEW NOTE ----",
-          "# What this step did, assumptions made, and anything I should double-check",
-          "# Next step will be: [brief description of next step]",
-          "### Step 5: Self-Review",
-          "## Review Checklist",
-          "### 1. Correctness",
-          "### 2. Error Handling",
-          "### 3. Edge Cases",
-          "### 4. Django-Specific (skip if not applicable)"
-        ],
-        "code_blocks": [
-          "CHAT 1 — THINK                        CHAT 2 — BUILD\n───────────────────────────────────   ───────────────────────────────────\nStep 1:  Requirement Clarification    Step 4:  Implementation\nStep 2:  Feature Specification        Step 5:  Self-Review\nStep 3:  Technical Design             Step 6:  Test Generation\n                                      Step 7:  Integration Check\n\nOUTPUT: Two .md files                 INPUT:  Those two .md files\n  - feature_spec.md                           + codebase context\n  - implementation_plan.md",
-          "your-django-project/\n└── ai-documents/\n    └── features/\n        └── <feature-name>/\n            ├── feature_spec.md\n            ├── implementation_plan.md\n            └── integration_check.md",
-          "You are a senior software engineer doing a requirement review before implementation.\n\n## Service Type\n[DB-BACKED SERVICE | INTELLIGENT SERVICE | AUTOMATION SERVICE]\n\n## User Story\n[PASTE USER STORY HERE]\n\n## Additional Context\n[Any extra notes, constraints, or background]\n\n---\n\nYour job is NOT to write code yet.\n\nBased on the service type and user story above, ask me the most important\nclarifying questions a senior engineer would ask before starting implementation.\n\nFocus your questions on:\n\nIf DB-BACKED SERVICE:\n- Data model ambiguities (relationships, nullable fields, uniqueness)\n- Business rule edge cases\n- Read/write performance expectations\n- What happens on failure or partial completion\n\nIf INTELLIGENT SERVICE:\n- What is the exact input and expected output format\n- Which LLM / model is being used, or is it flexible\n- How should hallucinations or low-confidence outputs be handled\n- Latency and cost sensitivity\n- Does the output feed into another system\n\nIf AUTOMATION SERVICE:\n- What triggers this automation (scheduled, on-demand, event-driven)\n- How to handle failures mid-flow (partial completion, retries)\n- Are there login/auth steps involved\n- What does success/failure look like and how is it reported\n- Are there rate limiting or anti-bot concerns\n\nFor ALL service types also ask about:\n- Who are the consumers of this service (internal, external, other devs)\n- Are there existing similar patterns in the codebase to follow\n- What is out of scope for this feature\n\nReturn a numbered list of questions only. No code, no suggestions yet.",
-          "Based on our requirements discussion, generate a feature specification\nfile called `feature_spec.md`.\n\nThis file has two jobs:\n1. It drives the technical design in the next step\n2. It will be used in Chat 2 to generate tests\n\nSo it must capture behavior precisely — not architecture, not code,\njust what the feature does and how it should behave in every scenario.\n\n---\n\n## File Structure\n\n### 1. Feature Overview\n- One paragraph summary of what this feature does and why it exists\n- The service type (DB-backed / Intelligent / Automation)\n- Primary consumers of this feature (who or what calls it)\n\n### 2. Inputs & Outputs\n- Every input this feature accepts: name, type, required/optional, constraints\n- Every output this feature returns: shape, type, and what each field means\n- If it's an API endpoint, include the request/response contract\n\n### 3. Business Rules\nA numbered list of explicit rules the feature must enforce.\nEach rule should be a single, testable statement. Examples:\n- \"A user cannot submit a request if their account is inactive\"\n- \"If the LLM returns malformed JSON, the service must retry up to 3 times\"\n- \"A task must not be marked complete if any of its subtasks are still pending\"\n\n### 4. Acceptance Scenarios\nWritten in plain language, not code. For each scenario use this format:\n\n**Scenario [N]: [Short name]**\n- Given: [initial state or context]\n- When: [the action or input]\n- Then: [the expected outcome]\n\nCover these scenario types:\n- Happy path (the normal successful flow)\n- Edge cases (boundary values, empty inputs, minimum/maximum)\n- Failure cases (what happens when things go wrong)\n- For intelligent services: unexpected or malformed LLM output\n- For automation services: mid-flow failures, element not found, timeouts\n\n### 5. Out of Scope\nExplicitly list what this feature does NOT handle.\nThis prevents scope creep in both implementation and tests.\n\n---\n\n## Rules for Writing This Spec\n- Every statement must be testable — if you can't write a test for it, rewrite it\n- No implementation details — say WHAT, never HOW\n- No ambiguous language — avoid \"should handle gracefully\",\n  instead say exactly what happens\n- If something is still ambiguous, flag it with: ⚠️ OPEN QUESTION: [question]\n  rather than making an assumption silently",
-          "Using feature_spec.md as the source of truth, produce a technical design\nfor this feature and write it to a file called `implementation_plan.md`.\n\nDo NOT write implementation code yet.\n\n---\n\n## Phase 1 — Design Brief\nFirst, present the design for my review with these sections:\n\n### 1. Service Architecture\n- What functions/classes/modules need to be created or modified\n- How they relate to each other (call flow)\n- Where this fits in the existing project structure\n\n### 2. Data Layer (skip if not applicable)\n- New or modified Django models\n- Key fields, relationships, and constraints to be aware of\n- Whether any migrations have non-trivial risk\n\n### 3. External Dependencies\n- Any new libraries, APIs, or services needed\n- LLM model/tools if this is an intelligent service\n- Browser/driver considerations if this is an automation service\n\n### 4. Error Handling Strategy\n- What can go wrong at each major step\n- How failures should be surfaced (exception, return value, logging)\n\n### 5. Open Questions / Risks\n- Anything still ambiguous after reviewing feature_spec.md\n- Technical risks or tradeoffs worth flagging before coding starts\n\nKeep each section concise — this is a design brief, not documentation.\nFlag anything where you see multiple valid approaches and briefly state\nthe tradeoff.\n\nWait for my approval before proceeding to Phase 2.\n\n---\n\n## Phase 2 — Write the Plan\nOnce I approve the design, write `implementation_plan.md`:\n\n# Implementation Plan — [Feature Name]\n\n## Architecture Summary\n[One paragraph summary of the agreed approach]\n\n## Implementation Steps\n- [ ] Step 1: [e.g. Create/modify models]\n- [ ] Step 2: [e.g. Write service logic]\n- [ ] Step 3: [e.g. Write utilities]\n- [ ] Step 4: [e.g. Wire up views/entry point]\n\n## Key Decisions & Assumptions\n[Any tradeoffs or assumptions made during design that Chat 2 should know about]\n\n## Open Questions\n[Any unresolved ⚠️ items from feature_spec.md that must be addressed\nbefore or during implementation]",
-          "I am implementing a new feature. The thinking and design phase is complete.\nHere are the reference files you must read before we start:\n\n- feature_spec.md — the full requirements and acceptance scenarios\n- implementation_plan.md — the agreed technical design\n\nRules:\n- Treat these files as the source of truth, not our conversation\n- If anything in the codebase contradicts the spec, flag it, don't silently decide\n- We will follow the step-by-step implementation loop from implementation_plan.md\n\nStart by reading both files and confirming you understand the feature\nand the plan. Then wait for me to say \"begin\".",
-          "Now implement the feature following implementation_plan.md exactly.\n\n## Execution Rules\n- Implement only one step at a time\n- After completing each step, mark it done in implementation_plan.md:\n  `- [x] Step description`\n- Add a short note under the step if you made any assumptions\n- Wait for my review and confirmation before moving to the next step\n- Repeat until all steps are complete\n\n---\n\n## Implementation Rules\n\n### General\n- Follow the existing code style and patterns you see in this project\n- Use type hints on all functions and methods\n- Every function must have a docstring (one line is fine for simple functions)\n- No magic numbers or hardcoded strings — use constants or config\n- Keep functions small and single-purpose\n\n### Error Handling\n- Never silently swallow exceptions\n- Use specific exception types, not bare `except:`\n- Log errors with enough context to debug (include relevant IDs, inputs)\n- Raise custom exceptions where the caller needs to handle failure explicitly\n\n### Django-Specific (skip if not applicable)\n- Use select_related / prefetch_related where you touch related objects\n- Any multi-step DB writes must be wrapped in a transaction\n- Never put business logic in views — it belongs in services or managers\n- Serializer validation should be strict, not lenient\n\n### Intelligent Service-Specific (skip if not applicable)\n- Separate prompt templates from business logic\n- LLM calls must have error handling for timeouts and malformed responses\n- Log the raw LLM input/output at DEBUG level for traceability\n- Never trust LLM output without validation against expected format\n\n### Automation Service-Specific (skip if not applicable)\n- Each major browser action should be wrapped in a try/except\n- Add explicit waits, never implicit/hardcoded sleep where avoidable\n- Log each major step so failures are easy to locate in logs\n- Make the automation resumable or at minimum clearly report where it failed\n\n---\n\n## Output Format Per Step\nFor each step, produce code and end with:\n# ---- REVIEW NOTE ----\n# What this step did, assumptions made, and anything I should double-check\n# Next step will be: [brief description of next step]",
-          "Review the code you just implemented against the checklist below.\nDo NOT rewrite everything — only flag and fix real issues you find.\n\nFor each section, explicitly state:\n- ✅ PASS — if everything looks good, briefly say why\n- ⚠️ ISSUE — if something needs fixing, explain what and fix it immediately\n- N/A — if the section doesn't apply to this service type\n\n---\n\n## Review Checklist\n\n### 1. Correctness\n- Does the implementation match every business rule in feature_spec.md?\n- Are all acceptance scenarios from feature_spec.md actually handled?\n- Are there any ⚠️ OPEN QUESTIONS in the spec that were never resolved?\n\n### 2. Error Handling\n- Is every external call wrapped in proper error handling?\n  (DB queries, LLM calls, HTTP requests, browser actions)\n- Are exceptions specific, never bare `except:`\n- Are errors logged with enough context to debug in production?\n- Does the caller receive a meaningful signal when something fails?\n\n### 3. Edge Cases\n- What happens with empty inputs or None values?\n- What happens at boundary values (empty list, single item, max size)?\n- Are there any assumptions in the code that could silently fail?\n\n### 4. Django-Specific (skip if not applicable)\n- Are multi-step DB writes wrapped in transactions?\n- Are there any N+1 query risks?\n- Is business logic leaking into views or serializers?\n- Are there any missing indexes on fields used in filters or lookups?\n\n### 5. Intelligent Service-Specific (skip if not applicable)\n- Is LLM output validated before being used downstream?\n- Is the retry logic actually tested against malformed responses?\n- Are prompt templates decoupled from business logic?\n- Is token usage being logged or tracked?\n\n### 6. Automation Service-Specific (skip if not applicable)\n- Is every browser interaction protected against timeout/not-found?\n- Are there any hardcoded sleeps that should be explicit waits?\n- Is the failure point clearly logged if the automation breaks mid-flow?\n- Is there any cleanup needed if the automation fails halfway?\n\n### 7. Code Quality\n- Are there any functions doing more than one thing?\n- Are there any hardcoded strings or magic numbers that should be constants?\n- Are all functions typed and have docstrings?\n- Is there any dead code or commented-out blocks left behind?\n\n### 8. Security (flag only, don't over-engineer)\n- Is any sensitive data being logged that shouldn't be?\n- Is user input being trusted anywhere without validation?\n- Are any credentials or secrets hardcoded?\n\n---\n\n## After the Review\n- Update implementation_plan.md with a final entry:\n  `- [x] Self-review complete — [N] issues found and fixed`\n- If any ⚠️ OPEN QUESTIONS remain unresolved from feature_spec.md,\n  list them explicitly so I can make a decision before tests are written",
-          "Using feature_spec.md as the source of truth, generate a comprehensive\ntest suite for the feature we just implemented and reviewed.\n\nDo NOT infer test cases from the code — derive them from feature_spec.md.\nThe code tells you how it works, the spec tells you how it SHOULD work.\n\n---\n\n## Naming Convention\n\n### Default Pattern (logic, business rules, edge cases)\ntest_<subject>__when_<context>__then_<expected_behavior>()\n\n### HTTP Pattern (endpoint/integration tests)\ntest_<httpverb>_<endpoint>__when_<context>__then_<expected_behavior>()\n\n### Rules\n- Always snake_case, always descriptive, never abbreviated\n- No numeric status codes in names UNLESS the status itself is the focus\n  Valid exception: test_post_verify__when_rate_limited__then_429_too_many_requests()\n- One behavior per test, no vague names like test_verify_success()\n- Use pytest.mark.parametrize with ids= for variations of the same scenario:\n  @pytest.mark.parametrize(\"identifier\", [\"email\", \"phone\"], ids=[\"email\",\"phone\"])\n- Helper functions that are not tests must be prefixed with _\n\n---\n\n## Test Structure\n\n### 1. Unit Tests\n- One test per business rule listed in feature_spec.md\n- Mock all external dependencies (DB, LLM calls, HTTP, browser)\n- Test each rule in isolation — no chaining of behaviors in one test\n\n### 2. Edge Case Tests\n- Cover every edge case listed in feature_spec.md\n- Also cover: None inputs, empty strings, empty lists, boundary values\n- For intelligent services: malformed LLM response, timeout, empty response\n- For automation services: element not found, timeout, mid-flow failure\n\n### 3. Failure Case Tests\n- Every failure scenario from feature_spec.md must have a test\n- Assert on the specific exception type raised, not just that it failed\n- Assert on log output where logging is part of the contract\n\n### 4. Integration / Endpoint Tests (skip if no API layer)\n- Use HTTP pattern naming\n- Test the full request → response cycle\n- Use pytest fixtures for auth, client setup, and test data\n- Assert on response shape, not just status code\n\n---\n\n## Test File Organization\n- Group tests in classes by subject:\n  class TestVerify:\n      def test_verify__when_...\n      def test_verify__when_...\n\n  class TestSend:\n      def test_send__when_...\n\n- One test file per feature module, named: test_<module_name>.py\n- Shared fixtures go in conftest.py, not inside test files\n\n---\n\n## Output Format\nProduce tests in this order:\n1. conftest.py additions (fixtures needed for this feature)\n2. Unit tests\n3. Edge case tests\n4. Failure case tests\n5. Integration tests (if applicable)\n\nAfter all tests are written, produce a short coverage summary:\n# ---- COVERAGE SUMMARY ----\n# Business rules covered: X/X from feature_spec.md\n# Acceptance scenarios covered: X/X from feature_spec.md\n# Open questions that could not be tested: [list any ⚠️ items]",
-          "Now that the feature is implemented and tested, perform an integration check.\nDo NOT write new code yet — this is an analysis step.\n\nReview the newly implemented code in the context of the entire codebase\nand produce an integration report saved to `integration_check.md`.\n\n---\n\n## Integration Check Sections\n\n### 1. Breaking Changes\n- Does this feature change any existing function signatures or return types?\n- Does it modify any shared models, serializers, or utilities?\n- Does it change any existing API contracts (request/response shape)?\n- Are there any other parts of the codebase that call modified code\n  and may now behave differently?\n\nFor each breaking change found:\n⚠️ BREAKING: [what changed] → [what is affected] → [recommended fix]\n\n### 2. Database Impact (skip if not applicable)\n- Are there any new migrations that could be risky on a live database?\n  (adding non-nullable columns, dropping columns, renaming fields)\n- Are there any queries in the new code that could cause performance\n  issues at scale? (missing indexes, full table scans, N+1 risks)\n- Are there any data integrity risks if the migration runs mid-traffic?\n\nFor each issue found:\n⚠️ DB RISK: [what the risk is] → [recommended mitigation]\n\n### 3. LLM Integration Impact (skip if not applicable)\n- Does this feature introduce new LLM calls that affect latency\n  of any existing flows?\n- Are there shared prompt templates or LLM clients being modified?\n- Could the new LLM behavior affect any existing features that\n  depend on the same model or pipeline?\n\n### 4. Automation Impact (skip if not applicable)\n- Does this automation share any browser sessions or drivers\n  with existing automations?\n- Could scheduling or timing of this automation conflict with\n  existing ones?\n- Are there shared selectors or page interaction patterns\n  that could be affected by changes here?\n\n### 5. Configuration & Environment\n- Are there new environment variables or settings required?\n- Are they documented and do they have safe defaults?\n- Will this feature behave differently across dev/staging/production\n  environments in any unexpected way?\n\n### 6. Dependency Impact\n- Are any new libraries being introduced?\n- Do they conflict with existing dependencies in requirements.txt?\n- Are there any licensing or security concerns with new packages?\n\n### 7. Backwards Compatibility\n- If this feature is behind an API, is the old contract still honored?\n- If existing data is affected, is there a migration or backfill needed?\n- Are there any consumers of this feature (internal or external) that\n  need to be notified of changes?\n\n---\n\n## Output Format\n\nProduce integration_check.md with:\n- One section per category above\n- ✅ CLEAR — if no issues found in that section\n- ⚠️ RISK — for each issue found, with recommended action\n- N/A — if the section doesn't apply\n\nEnd the file with a final summary:\n\n## Integration Verdict\n- 🟢 READY — no issues found, safe to merge\n- 🟡 MERGE WITH CAUTION — issues found but have clear mitigations\n- 🔴 NEEDS WORK — blocking issues that must be resolved before merging\n\nList any action items that must be completed before this feature\nis considered done."
-        ]
-      },
-      "activation": {
-        "file_patterns": [
-          "architect",
-          "backend",
-          "reviewer"
-        ],
-        "keywords": [
-          "**two",
-          "across",
-          "ai-assisted",
-          "build",
-          "building.",
-          "chat",
-          "chats**",
-          "clear",
-          "development",
-          "django/python",
-          "each",
-          "effectively",
-          "engineers",
-          "feature",
-          "full",
-          "guide",
-          "handoff",
-          "implementation",
-          "inputs",
-          "into"
-        ]
-      },
-      "priority": 90,
-      "status": "active",
-      "applies_to": [
-        "architect",
-        "backend",
-        "reviewer"
-      ],
-      "depends_on": [],
-      "related": [],
-      "relationships": {
-        "depends_on": [],
-        "related": []
-      },
-      "tags": [
-        "ai",
-        "feature",
-        "specification",
-        "implementation",
-        "testing"
-      ],
-      "checksum": "c99a4ebce05917777cba8c41bb5a083e13e6feb93afcd6e98b556eab6c4b7b17"
-    },
-    {
-      "type": "knowledge_ir",
       "id": "shared-code-quality-baseline",
       "source": "knowledge/shared/code-quality-baseline.md",
       "domain": "shared",
@@ -4053,14 +3905,14 @@
       "category": "git-workflow.mdc",
       "kind": "workflow",
       "content": {
-        "raw": "---\ntitle: Git Workflow\nsummary: Backend git workflow notes aligned with share/gitflow-unified\ndomain: shared\ncategory: git-workflow.mdc\napplies_to:\n  - \"backend/**/*\"\n  - \".github/**/*\"\npriority: 50\nkind: workflow\n---\n\n# Git & Version Control\n\n## Source of Truth\n\n- مرجع اصلی و الزامی Git Flow در پروژه:\n  - `.cursor/rules/share/gitflow-branch-policy.mdc`\n- اگر هر اختلافی وجود داشت، همیشه `gitflow-branch-policy.mdc` اولویت دارد.\n\n## Branch Strategy (Aligned)\n\n* `main`: production\n* `develop`: integration\n* `feature/*`: feature جدید\n* `bugfix/*`: رفع باگ محیط توسعه\n* `release/*`: آماده‌سازی release\n* `hotfix/*`: رفع فوری production\n\n```bash\ngit checkout develop\ngit pull origin develop\ngit checkout -b feature/add-payment develop\n```\n\n## Commit Convention\n\n```\ntype(scope): description\n\n# انواع:\nfeat:   feature جدید\nfix:    رفع باگ\nrefactor: تغییر بدون تغییر رفتار\ntest:   تست\ndocs:   مستندات\nchore:  نگهداری\n```\n\nمثال:\n\n```\nfeat(auth): add JWT authentication to user login\n```\n\n## High-Risk Change (تغییر پرخطر)\n\nAI باید این موارد را **explicitly اعلام خطر** کند:\n\n* تغییر در database schema\n* تغییر در API contract (breaking changes)\n* تغییر در authentication/authorization\n* refactoring بیش از ۱۰۰ خط\n* افزودن dependency جدید\n* حذف field یا endpoint\n",
+        "raw": "---\ntitle: Git Workflow\nsummary: Backend git workflow notes aligned with share/gitflow-unified\ndomain: shared\ncategory: git-workflow.mdc\napplies_to:\n  - \"backend/**/*\"\n  - \".github/**/*\"\npriority: 50\nkind: workflow\n---\n\n# Git & Version Control\n\n## Source of Truth\n\n- مرجع اصلی و الزامی Git Flow در پروژه:\n  - `knowledge/shared/gitflow-branch-policy.md`\n- اگر هر اختلافی وجود داشت، همیشه `knowledge/shared/gitflow-branch-policy.md` اولویت دارد.\n\n## Branch Strategy (Aligned)\n\n* `main`: production\n* `develop`: integration\n* `feature/*`: feature جدید\n* `bugfix/*`: رفع باگ محیط توسعه\n* `release/*`: آماده‌سازی release\n* `hotfix/*`: رفع فوری production\n\n```bash\ngit checkout develop\ngit pull origin develop\ngit checkout -b feature/add-payment develop\n```\n\n## Commit Convention\n\n```\ntype(scope): description\n\n# انواع:\nfeat:   feature جدید\nfix:    رفع باگ\nrefactor: تغییر بدون تغییر رفتار\ntest:   تست\ndocs:   مستندات\nchore:  نگهداری\n```\n\nمثال:\n\n```\nfeat(auth): add JWT authentication to user login\n```\n\n## High-Risk Change (تغییر پرخطر)\n\nAI باید این موارد را **explicitly اعلام خطر** کند:\n\n* تغییر در database schema\n* تغییر در API contract (breaking changes)\n* تغییر در authentication/authorization\n* refactoring بیش از ۱۰۰ خط\n* افزودن dependency جدید\n* حذف field یا endpoint\n",
         "summary": "Git Workflow",
         "key_points": [
           "- \"backend/**/*\"",
           "- \".github/**/*\"",
           "- مرجع اصلی و الزامی Git Flow در پروژه:",
-          "- `.cursor/rules/share/gitflow-branch-policy.mdc`",
-          "- اگر هر اختلافی وجود داشت، همیشه `gitflow-branch-policy.mdc` اولویت دارد."
+          "- `knowledge/shared/gitflow-branch-policy.md`",
+          "- اگر هر اختلافی وجود داشت، همیشه `knowledge/shared/gitflow-branch-policy.md` اولویت دارد."
         ],
         "sections": [
           "# Git & Version Control",
@@ -4085,9 +3937,7 @@
           "\".github/**/*\"",
           "\"backend/**/*\"",
           "(aligned)",
-          "`.cursor/rules/share/gitflow-branch-policy.mdc`",
-          "`develop`:",
-          "`gitflow-branch-policy.mdc`",
+          "`knowledge/shared/gitflow-branch-policy.md`",
           "`main`:",
           "aligned",
           "applies_to:",
@@ -4101,7 +3951,9 @@
           "kind:",
           "notes",
           "priority:",
-          "production"
+          "production",
+          "share/gitflow-unified",
+          "shared"
         ]
       },
       "priority": 50,
@@ -4116,7 +3968,7 @@
         "depends_on": [],
         "related": []
       },
-      "checksum": "fd31f1308cb3bc8baa49ecb161370af5d05e48e219e4bbc87439f037b936a5eb"
+      "checksum": "d8db3be314cb2bed66897f0cc686ce4ec754aca41438f56c4abb0d8b28306d96"
     },
     {
       "type": "knowledge_ir",
@@ -4436,35 +4288,168 @@
     },
     {
       "type": "knowledge_ir",
+      "id": "shared-ai-feature-implementation-guide",
+      "source": "knowledge/shared/ai-feature-implementation-guide.md",
+      "domain": "shared",
+      "category": "reference",
+      "kind": "reference",
+      "content": {
+        "raw": "# AI-Assisted Feature Implementation Guide\n\n> A systematic, repeatable process for Django/Python engineers to use AI \n> effectively across the full feature development lifecycle.\n\n---\n\n## How to Use This Guide\n\nThis process is split into **two chats** — one for thinking, one for building.\nEach chat has clear inputs and outputs. Never skip the handoff step.\n\n```\nCHAT 1 — THINK                        CHAT 2 — BUILD\n───────────────────────────────────   ───────────────────────────────────\nStep 1:  Requirement Clarification    Step 4:  Implementation\nStep 2:  Feature Specification        Step 5:  Self-Review\nStep 3:  Technical Design             Step 6:  Test Generation\n                                      Step 7:  Integration Check\n\nOUTPUT: Two .md files                 INPUT:  Those two .md files\n  - feature_spec.md                           + codebase context\n  - implementation_plan.md\n```\n\n---\n\n## File Structure\n\nStore all generated documents in version control alongside your code:\n\n```\nyour-django-project/\n└── ai-documents/\n    └── features/\n        └── <feature-name>/\n            ├── feature_spec.md\n            ├── implementation_plan.md\n            └── integration_check.md\n```\n\n**Naming convention:** Use the Django app name or main model the feature touches.\nExamples: `user-authentication`, `payment-processing`, `llm-summary-service`\n\n**Commit these files.** They are the living documentation of why your code works\nthe way it does. If a feature is significantly changed later, either update the\nspec or create a new folder: `user-authentication-v2`.\n\n---\n\n## Service Types\n\nYour features fall into three types. You will declare the type in each prompt —\nit changes what questions get asked and what rules apply.\n\n| Type | Description |\n|---|---|\n| 🗄️ DB-BACKED SERVICE | Django models, ORM, migrations, transactions |\n| 🧠 INTELLIGENT SERVICE | LLM integrations, prompt chains, pipelines |\n| 🌐 AUTOMATION SERVICE | Selenium, browser automation, web interactions |\n\n---\n\n## CHAT 1 — THINK\n\n---\n\n### Step 1: Requirement Clarification\n\n**Purpose:** Surface ambiguities and edge cases before any design or code is written.\n\n**Input:** Your user story + service type\n**Output:** A numbered list of clarifying questions — answer all of them before Step 2\n\n```\nYou are a senior software engineer doing a requirement review before implementation.\n\n## Service Type\n[DB-BACKED SERVICE | INTELLIGENT SERVICE | AUTOMATION SERVICE]\n\n## User Story\n[PASTE USER STORY HERE]\n\n## Additional Context\n[Any extra notes, constraints, or background]\n\n---\n\nYour job is NOT to write code yet.\n\nBased on the service type and user story above, ask me the most important\nclarifying questions a senior engineer would ask before starting implementation.\n\nFocus your questions on:\n\nIf DB-BACKED SERVICE:\n- Data model ambiguities (relationships, nullable fields, uniqueness)\n- Business rule edge cases\n- Read/write performance expectations\n- What happens on failure or partial completion\n\nIf INTELLIGENT SERVICE:\n- What is the exact input and expected output format\n- Which LLM / model is being used, or is it flexible\n- How should hallucinations or low-confidence outputs be handled\n- Latency and cost sensitivity\n- Does the output feed into another system\n\nIf AUTOMATION SERVICE:\n- What triggers this automation (scheduled, on-demand, event-driven)\n- How to handle failures mid-flow (partial completion, retries)\n- Are there login/auth steps involved\n- What does success/failure look like and how is it reported\n- Are there rate limiting or anti-bot concerns\n\nFor ALL service types also ask about:\n- Who are the consumers of this service (internal, external, other devs)\n- Are there existing similar patterns in the codebase to follow\n- What is out of scope for this feature\n\nReturn a numbered list of questions only. No code, no suggestions yet.\n```\n\n**After this step:** Answer every question in the chat before proceeding to Step 2.\n\n---\n\n### Step 2: Feature Specification\n\n**Purpose:** Formally capture what the feature must do in precise, testable language.\nWritten now — while requirements are freshest — so that the technical design in\nStep 3 is driven by the spec, not the other way around.\n\n**Input:** Answered questions from Step 1 (already in chat context)\n**Output:** `feature_spec.md`\n\n```\nBased on our requirements discussion, generate a feature specification\nfile called `feature_spec.md`.\n\nThis file has two jobs:\n1. It drives the technical design in the next step\n2. It will be used in Chat 2 to generate tests\n\nSo it must capture behavior precisely — not architecture, not code,\njust what the feature does and how it should behave in every scenario.\n\n---\n\n## File Structure\n\n### 1. Feature Overview\n- One paragraph summary of what this feature does and why it exists\n- The service type (DB-backed / Intelligent / Automation)\n- Primary consumers of this feature (who or what calls it)\n\n### 2. Inputs & Outputs\n- Every input this feature accepts: name, type, required/optional, constraints\n- Every output this feature returns: shape, type, and what each field means\n- If it's an API endpoint, include the request/response contract\n\n### 3. Business Rules\nA numbered list of explicit rules the feature must enforce.\nEach rule should be a single, testable statement. Examples:\n- \"A user cannot submit a request if their account is inactive\"\n- \"If the LLM returns malformed JSON, the service must retry up to 3 times\"\n- \"A task must not be marked complete if any of its subtasks are still pending\"\n\n### 4. Acceptance Scenarios\nWritten in plain language, not code. For each scenario use this format:\n\n**Scenario [N]: [Short name]**\n- Given: [initial state or context]\n- When: [the action or input]\n- Then: [the expected outcome]\n\nCover these scenario types:\n- Happy path (the normal successful flow)\n- Edge cases (boundary values, empty inputs, minimum/maximum)\n- Failure cases (what happens when things go wrong)\n- For intelligent services: unexpected or malformed LLM output\n- For automation services: mid-flow failures, element not found, timeouts\n\n### 5. Out of Scope\nExplicitly list what this feature does NOT handle.\nThis prevents scope creep in both implementation and tests.\n\n---\n\n## Rules for Writing This Spec\n- Every statement must be testable — if you can't write a test for it, rewrite it\n- No implementation details — say WHAT, never HOW\n- No ambiguous language — avoid \"should handle gracefully\",\n  instead say exactly what happens\n- If something is still ambiguous, flag it with: ⚠️ OPEN QUESTION: [question]\n  rather than making an assumption silently\n```\n\n**After this step:** Read `feature_spec.md` carefully and resolve any\n`⚠️ OPEN QUESTION` items before moving to Step 3.\n\n---\n\n### Step 3: Technical Design\n\n**Purpose:** Decide how to build what the spec describes. The design is explicitly\ndriven by `feature_spec.md` — not the other way around.\n\n**Input:** `feature_spec.md` (already in chat context)\n**Output:** `implementation_plan.md`\n\n```\nUsing feature_spec.md as the source of truth, produce a technical design\nfor this feature and write it to a file called `implementation_plan.md`.\n\nDo NOT write implementation code yet.\n\n---\n\n## Phase 1 — Design Brief\nFirst, present the design for my review with these sections:\n\n### 1. Service Architecture\n- What functions/classes/modules need to be created or modified\n- How they relate to each other (call flow)\n- Where this fits in the existing project structure\n\n### 2. Data Layer (skip if not applicable)\n- New or modified Django models\n- Key fields, relationships, and constraints to be aware of\n- Whether any migrations have non-trivial risk\n\n### 3. External Dependencies\n- Any new libraries, APIs, or services needed\n- LLM model/tools if this is an intelligent service\n- Browser/driver considerations if this is an automation service\n\n### 4. Error Handling Strategy\n- What can go wrong at each major step\n- How failures should be surfaced (exception, return value, logging)\n\n### 5. Open Questions / Risks\n- Anything s",
+        "summary": "Ai Feature Implementation Guide",
+        "key_points": [
+          "- feature_spec.md                           + codebase context",
+          "- implementation_plan.md",
+          "**Naming convention:** Use the Django app name or main model the feature touches.",
+          "**Commit these files.** They are the living documentation of why your code works",
+          "**Purpose:** Surface ambiguities and edge cases before any design or code is written.",
+          "**Input:** Your user story + service type",
+          "**Output:** A numbered list of clarifying questions — answer all of them before Step 2",
+          "- Data model ambiguities (relationships, nullable fields, uniqueness)",
+          "- Business rule edge cases",
+          "- Read/write performance expectations",
+          "- What happens on failure or partial completion",
+          "- What is the exact input and expected output format",
+          "- Which LLM / model is being used, or is it flexible",
+          "- How should hallucinations or low-confidence outputs be handled",
+          "- Latency and cost sensitivity",
+          "- Does the output feed into another system",
+          "- What triggers this automation (scheduled, on-demand, event-driven)",
+          "- How to handle failures mid-flow (partial completion, retries)",
+          "- Are there login/auth steps involved",
+          "- What does success/failure look like and how is it reported"
+        ],
+        "sections": [
+          "# AI-Assisted Feature Implementation Guide",
+          "## How to Use This Guide",
+          "## File Structure",
+          "## Service Types",
+          "## CHAT 1 — THINK",
+          "### Step 1: Requirement Clarification",
+          "## Service Type",
+          "## User Story",
+          "## Additional Context",
+          "### Step 2: Feature Specification",
+          "## File Structure",
+          "### 1. Feature Overview",
+          "### 2. Inputs & Outputs",
+          "### 3. Business Rules",
+          "### 4. Acceptance Scenarios",
+          "### 5. Out of Scope",
+          "## Rules for Writing This Spec",
+          "### Step 3: Technical Design",
+          "## Phase 1 — Design Brief",
+          "### 1. Service Architecture",
+          "### 2. Data Layer (skip if not applicable)",
+          "### 3. External Dependencies",
+          "### 4. Error Handling Strategy",
+          "### 5. Open Questions / Risks",
+          "## Phase 2 — Write the Plan",
+          "# Implementation Plan — [Feature Name]",
+          "## Architecture Summary",
+          "## Implementation Steps",
+          "## Key Decisions & Assumptions",
+          "## Open Questions",
+          "## CHAT 2 — BUILD",
+          "### Handoff Prompt (Always Start Chat 2 With This)",
+          "### Step 4: Implementation",
+          "## Execution Rules",
+          "## Implementation Rules",
+          "### General",
+          "### Error Handling",
+          "### Django-Specific (skip if not applicable)",
+          "### Intelligent Service-Specific (skip if not applicable)",
+          "### Automation Service-Specific (skip if not applicable)",
+          "## Output Format Per Step",
+          "# ---- REVIEW NOTE ----",
+          "# What this step did, assumptions made, and anything I should double-check",
+          "# Next step will be: [brief description of next step]",
+          "### Step 5: Self-Review",
+          "## Review Checklist",
+          "### 1. Correctness",
+          "### 2. Error Handling",
+          "### 3. Edge Cases",
+          "### 4. Django-Specific (skip if not applicable)"
+        ],
+        "code_blocks": [
+          "CHAT 1 — THINK                        CHAT 2 — BUILD\n───────────────────────────────────   ───────────────────────────────────\nStep 1:  Requirement Clarification    Step 4:  Implementation\nStep 2:  Feature Specification        Step 5:  Self-Review\nStep 3:  Technical Design             Step 6:  Test Generation\n                                      Step 7:  Integration Check\n\nOUTPUT: Two .md files                 INPUT:  Those two .md files\n  - feature_spec.md                           + codebase context\n  - implementation_plan.md",
+          "your-django-project/\n└── ai-documents/\n    └── features/\n        └── <feature-name>/\n            ├── feature_spec.md\n            ├── implementation_plan.md\n            └── integration_check.md",
+          "You are a senior software engineer doing a requirement review before implementation.\n\n## Service Type\n[DB-BACKED SERVICE | INTELLIGENT SERVICE | AUTOMATION SERVICE]\n\n## User Story\n[PASTE USER STORY HERE]\n\n## Additional Context\n[Any extra notes, constraints, or background]\n\n---\n\nYour job is NOT to write code yet.\n\nBased on the service type and user story above, ask me the most important\nclarifying questions a senior engineer would ask before starting implementation.\n\nFocus your questions on:\n\nIf DB-BACKED SERVICE:\n- Data model ambiguities (relationships, nullable fields, uniqueness)\n- Business rule edge cases\n- Read/write performance expectations\n- What happens on failure or partial completion\n\nIf INTELLIGENT SERVICE:\n- What is the exact input and expected output format\n- Which LLM / model is being used, or is it flexible\n- How should hallucinations or low-confidence outputs be handled\n- Latency and cost sensitivity\n- Does the output feed into another system\n\nIf AUTOMATION SERVICE:\n- What triggers this automation (scheduled, on-demand, event-driven)\n- How to handle failures mid-flow (partial completion, retries)\n- Are there login/auth steps involved\n- What does success/failure look like and how is it reported\n- Are there rate limiting or anti-bot concerns\n\nFor ALL service types also ask about:\n- Who are the consumers of this service (internal, external, other devs)\n- Are there existing similar patterns in the codebase to follow\n- What is out of scope for this feature\n\nReturn a numbered list of questions only. No code, no suggestions yet.",
+          "Based on our requirements discussion, generate a feature specification\nfile called `feature_spec.md`.\n\nThis file has two jobs:\n1. It drives the technical design in the next step\n2. It will be used in Chat 2 to generate tests\n\nSo it must capture behavior precisely — not architecture, not code,\njust what the feature does and how it should behave in every scenario.\n\n---\n\n## File Structure\n\n### 1. Feature Overview\n- One paragraph summary of what this feature does and why it exists\n- The service type (DB-backed / Intelligent / Automation)\n- Primary consumers of this feature (who or what calls it)\n\n### 2. Inputs & Outputs\n- Every input this feature accepts: name, type, required/optional, constraints\n- Every output this feature returns: shape, type, and what each field means\n- If it's an API endpoint, include the request/response contract\n\n### 3. Business Rules\nA numbered list of explicit rules the feature must enforce.\nEach rule should be a single, testable statement. Examples:\n- \"A user cannot submit a request if their account is inactive\"\n- \"If the LLM returns malformed JSON, the service must retry up to 3 times\"\n- \"A task must not be marked complete if any of its subtasks are still pending\"\n\n### 4. Acceptance Scenarios\nWritten in plain language, not code. For each scenario use this format:\n\n**Scenario [N]: [Short name]**\n- Given: [initial state or context]\n- When: [the action or input]\n- Then: [the expected outcome]\n\nCover these scenario types:\n- Happy path (the normal successful flow)\n- Edge cases (boundary values, empty inputs, minimum/maximum)\n- Failure cases (what happens when things go wrong)\n- For intelligent services: unexpected or malformed LLM output\n- For automation services: mid-flow failures, element not found, timeouts\n\n### 5. Out of Scope\nExplicitly list what this feature does NOT handle.\nThis prevents scope creep in both implementation and tests.\n\n---\n\n## Rules for Writing This Spec\n- Every statement must be testable — if you can't write a test for it, rewrite it\n- No implementation details — say WHAT, never HOW\n- No ambiguous language — avoid \"should handle gracefully\",\n  instead say exactly what happens\n- If something is still ambiguous, flag it with: ⚠️ OPEN QUESTION: [question]\n  rather than making an assumption silently",
+          "Using feature_spec.md as the source of truth, produce a technical design\nfor this feature and write it to a file called `implementation_plan.md`.\n\nDo NOT write implementation code yet.\n\n---\n\n## Phase 1 — Design Brief\nFirst, present the design for my review with these sections:\n\n### 1. Service Architecture\n- What functions/classes/modules need to be created or modified\n- How they relate to each other (call flow)\n- Where this fits in the existing project structure\n\n### 2. Data Layer (skip if not applicable)\n- New or modified Django models\n- Key fields, relationships, and constraints to be aware of\n- Whether any migrations have non-trivial risk\n\n### 3. External Dependencies\n- Any new libraries, APIs, or services needed\n- LLM model/tools if this is an intelligent service\n- Browser/driver considerations if this is an automation service\n\n### 4. Error Handling Strategy\n- What can go wrong at each major step\n- How failures should be surfaced (exception, return value, logging)\n\n### 5. Open Questions / Risks\n- Anything still ambiguous after reviewing feature_spec.md\n- Technical risks or tradeoffs worth flagging before coding starts\n\nKeep each section concise — this is a design brief, not documentation.\nFlag anything where you see multiple valid approaches and briefly state\nthe tradeoff.\n\nWait for my approval before proceeding to Phase 2.\n\n---\n\n## Phase 2 — Write the Plan\nOnce I approve the design, write `implementation_plan.md`:\n\n# Implementation Plan — [Feature Name]\n\n## Architecture Summary\n[One paragraph summary of the agreed approach]\n\n## Implementation Steps\n- [ ] Step 1: [e.g. Create/modify models]\n- [ ] Step 2: [e.g. Write service logic]\n- [ ] Step 3: [e.g. Write utilities]\n- [ ] Step 4: [e.g. Wire up views/entry point]\n\n## Key Decisions & Assumptions\n[Any tradeoffs or assumptions made during design that Chat 2 should know about]\n\n## Open Questions\n[Any unresolved ⚠️ items from feature_spec.md that must be addressed\nbefore or during implementation]",
+          "I am implementing a new feature. The thinking and design phase is complete.\nHere are the reference files you must read before we start:\n\n- feature_spec.md — the full requirements and acceptance scenarios\n- implementation_plan.md — the agreed technical design\n\nRules:\n- Treat these files as the source of truth, not our conversation\n- If anything in the codebase contradicts the spec, flag it, don't silently decide\n- We will follow the step-by-step implementation loop from implementation_plan.md\n\nStart by reading both files and confirming you understand the feature\nand the plan. Then wait for me to say \"begin\".",
+          "Now implement the feature following implementation_plan.md exactly.\n\n## Execution Rules\n- Implement only one step at a time\n- After completing each step, mark it done in implementation_plan.md:\n  `- [x] Step description`\n- Add a short note under the step if you made any assumptions\n- Wait for my review and confirmation before moving to the next step\n- Repeat until all steps are complete\n\n---\n\n## Implementation Rules\n\n### General\n- Follow the existing code style and patterns you see in this project\n- Use type hints on all functions and methods\n- Every function must have a docstring (one line is fine for simple functions)\n- No magic numbers or hardcoded strings — use constants or config\n- Keep functions small and single-purpose\n\n### Error Handling\n- Never silently swallow exceptions\n- Use specific exception types, not bare `except:`\n- Log errors with enough context to debug (include relevant IDs, inputs)\n- Raise custom exceptions where the caller needs to handle failure explicitly\n\n### Django-Specific (skip if not applicable)\n- Use select_related / prefetch_related where you touch related objects\n- Any multi-step DB writes must be wrapped in a transaction\n- Never put business logic in views — it belongs in services or managers\n- Serializer validation should be strict, not lenient\n\n### Intelligent Service-Specific (skip if not applicable)\n- Separate prompt templates from business logic\n- LLM calls must have error handling for timeouts and malformed responses\n- Log the raw LLM input/output at DEBUG level for traceability\n- Never trust LLM output without validation against expected format\n\n### Automation Service-Specific (skip if not applicable)\n- Each major browser action should be wrapped in a try/except\n- Add explicit waits, never implicit/hardcoded sleep where avoidable\n- Log each major step so failures are easy to locate in logs\n- Make the automation resumable or at minimum clearly report where it failed\n\n---\n\n## Output Format Per Step\nFor each step, produce code and end with:\n# ---- REVIEW NOTE ----\n# What this step did, assumptions made, and anything I should double-check\n# Next step will be: [brief description of next step]",
+          "Review the code you just implemented against the checklist below.\nDo NOT rewrite everything — only flag and fix real issues you find.\n\nFor each section, explicitly state:\n- ✅ PASS — if everything looks good, briefly say why\n- ⚠️ ISSUE — if something needs fixing, explain what and fix it immediately\n- N/A — if the section doesn't apply to this service type\n\n---\n\n## Review Checklist\n\n### 1. Correctness\n- Does the implementation match every business rule in feature_spec.md?\n- Are all acceptance scenarios from feature_spec.md actually handled?\n- Are there any ⚠️ OPEN QUESTIONS in the spec that were never resolved?\n\n### 2. Error Handling\n- Is every external call wrapped in proper error handling?\n  (DB queries, LLM calls, HTTP requests, browser actions)\n- Are exceptions specific, never bare `except:`\n- Are errors logged with enough context to debug in production?\n- Does the caller receive a meaningful signal when something fails?\n\n### 3. Edge Cases\n- What happens with empty inputs or None values?\n- What happens at boundary values (empty list, single item, max size)?\n- Are there any assumptions in the code that could silently fail?\n\n### 4. Django-Specific (skip if not applicable)\n- Are multi-step DB writes wrapped in transactions?\n- Are there any N+1 query risks?\n- Is business logic leaking into views or serializers?\n- Are there any missing indexes on fields used in filters or lookups?\n\n### 5. Intelligent Service-Specific (skip if not applicable)\n- Is LLM output validated before being used downstream?\n- Is the retry logic actually tested against malformed responses?\n- Are prompt templates decoupled from business logic?\n- Is token usage being logged or tracked?\n\n### 6. Automation Service-Specific (skip if not applicable)\n- Is every browser interaction protected against timeout/not-found?\n- Are there any hardcoded sleeps that should be explicit waits?\n- Is the failure point clearly logged if the automation breaks mid-flow?\n- Is there any cleanup needed if the automation fails halfway?\n\n### 7. Code Quality\n- Are there any functions doing more than one thing?\n- Are there any hardcoded strings or magic numbers that should be constants?\n- Are all functions typed and have docstrings?\n- Is there any dead code or commented-out blocks left behind?\n\n### 8. Security (flag only, don't over-engineer)\n- Is any sensitive data being logged that shouldn't be?\n- Is user input being trusted anywhere without validation?\n- Are any credentials or secrets hardcoded?\n\n---\n\n## After the Review\n- Update implementation_plan.md with a final entry:\n  `- [x] Self-review complete — [N] issues found and fixed`\n- If any ⚠️ OPEN QUESTIONS remain unresolved from feature_spec.md,\n  list them explicitly so I can make a decision before tests are written",
+          "Using feature_spec.md as the source of truth, generate a comprehensive\ntest suite for the feature we just implemented and reviewed.\n\nDo NOT infer test cases from the code — derive them from feature_spec.md.\nThe code tells you how it works, the spec tells you how it SHOULD work.\n\n---\n\n## Naming Convention\n\n### Default Pattern (logic, business rules, edge cases)\ntest_<subject>__when_<context>__then_<expected_behavior>()\n\n### HTTP Pattern (endpoint/integration tests)\ntest_<httpverb>_<endpoint>__when_<context>__then_<expected_behavior>()\n\n### Rules\n- Always snake_case, always descriptive, never abbreviated\n- No numeric status codes in names UNLESS the status itself is the focus\n  Valid exception: test_post_verify__when_rate_limited__then_429_too_many_requests()\n- One behavior per test, no vague names like test_verify_success()\n- Use pytest.mark.parametrize with ids= for variations of the same scenario:\n  @pytest.mark.parametrize(\"identifier\", [\"email\", \"phone\"], ids=[\"email\",\"phone\"])\n- Helper functions that are not tests must be prefixed with _\n\n---\n\n## Test Structure\n\n### 1. Unit Tests\n- One test per business rule listed in feature_spec.md\n- Mock all external dependencies (DB, LLM calls, HTTP, browser)\n- Test each rule in isolation — no chaining of behaviors in one test\n\n### 2. Edge Case Tests\n- Cover every edge case listed in feature_spec.md\n- Also cover: None inputs, empty strings, empty lists, boundary values\n- For intelligent services: malformed LLM response, timeout, empty response\n- For automation services: element not found, timeout, mid-flow failure\n\n### 3. Failure Case Tests\n- Every failure scenario from feature_spec.md must have a test\n- Assert on the specific exception type raised, not just that it failed\n- Assert on log output where logging is part of the contract\n\n### 4. Integration / Endpoint Tests (skip if no API layer)\n- Use HTTP pattern naming\n- Test the full request → response cycle\n- Use pytest fixtures for auth, client setup, and test data\n- Assert on response shape, not just status code\n\n---\n\n## Test File Organization\n- Group tests in classes by subject:\n  class TestVerify:\n      def test_verify__when_...\n      def test_verify__when_...\n\n  class TestSend:\n      def test_send__when_...\n\n- One test file per feature module, named: test_<module_name>.py\n- Shared fixtures go in conftest.py, not inside test files\n\n---\n\n## Output Format\nProduce tests in this order:\n1. conftest.py additions (fixtures needed for this feature)\n2. Unit tests\n3. Edge case tests\n4. Failure case tests\n5. Integration tests (if applicable)\n\nAfter all tests are written, produce a short coverage summary:\n# ---- COVERAGE SUMMARY ----\n# Business rules covered: X/X from feature_spec.md\n# Acceptance scenarios covered: X/X from feature_spec.md\n# Open questions that could not be tested: [list any ⚠️ items]",
+          "Now that the feature is implemented and tested, perform an integration check.\nDo NOT write new code yet — this is an analysis step.\n\nReview the newly implemented code in the context of the entire codebase\nand produce an integration report saved to `integration_check.md`.\n\n---\n\n## Integration Check Sections\n\n### 1. Breaking Changes\n- Does this feature change any existing function signatures or return types?\n- Does it modify any shared models, serializers, or utilities?\n- Does it change any existing API contracts (request/response shape)?\n- Are there any other parts of the codebase that call modified code\n  and may now behave differently?\n\nFor each breaking change found:\n⚠️ BREAKING: [what changed] → [what is affected] → [recommended fix]\n\n### 2. Database Impact (skip if not applicable)\n- Are there any new migrations that could be risky on a live database?\n  (adding non-nullable columns, dropping columns, renaming fields)\n- Are there any queries in the new code that could cause performance\n  issues at scale? (missing indexes, full table scans, N+1 risks)\n- Are there any data integrity risks if the migration runs mid-traffic?\n\nFor each issue found:\n⚠️ DB RISK: [what the risk is] → [recommended mitigation]\n\n### 3. LLM Integration Impact (skip if not applicable)\n- Does this feature introduce new LLM calls that affect latency\n  of any existing flows?\n- Are there shared prompt templates or LLM clients being modified?\n- Could the new LLM behavior affect any existing features that\n  depend on the same model or pipeline?\n\n### 4. Automation Impact (skip if not applicable)\n- Does this automation share any browser sessions or drivers\n  with existing automations?\n- Could scheduling or timing of this automation conflict with\n  existing ones?\n- Are there shared selectors or page interaction patterns\n  that could be affected by changes here?\n\n### 5. Configuration & Environment\n- Are there new environment variables or settings required?\n- Are they documented and do they have safe defaults?\n- Will this feature behave differently across dev/staging/production\n  environments in any unexpected way?\n\n### 6. Dependency Impact\n- Are any new libraries being introduced?\n- Do they conflict with existing dependencies in requirements.txt?\n- Are there any licensing or security concerns with new packages?\n\n### 7. Backwards Compatibility\n- If this feature is behind an API, is the old contract still honored?\n- If existing data is affected, is there a migration or backfill needed?\n- Are there any consumers of this feature (internal or external) that\n  need to be notified of changes?\n\n---\n\n## Output Format\n\nProduce integration_check.md with:\n- One section per category above\n- ✅ CLEAR — if no issues found in that section\n- ⚠️ RISK — for each issue found, with recommended action\n- N/A — if the section doesn't apply\n\nEnd the file with a final summary:\n\n## Integration Verdict\n- 🟢 READY — no issues found, safe to merge\n- 🟡 MERGE WITH CAUTION — issues found but have clear mitigations\n- 🔴 NEEDS WORK — blocking issues that must be resolved before merging\n\nList any action items that must be completed before this feature\nis considered done."
+        ]
+      },
+      "activation": {
+        "file_patterns": [],
+        "keywords": [
+          "**two",
+          "across",
+          "ai-assisted",
+          "build",
+          "building.",
+          "chat",
+          "chats**",
+          "clear",
+          "development",
+          "django/python",
+          "each",
+          "effectively",
+          "engineers",
+          "feature",
+          "full",
+          "guide",
+          "handoff",
+          "implementation",
+          "inputs",
+          "into"
+        ]
+      },
+      "priority": 50,
+      "status": "active",
+      "applies_to": [],
+      "depends_on": [],
+      "related": [],
+      "relationships": {
+        "depends_on": [],
+        "related": []
+      },
+      "checksum": "c99a4ebce05917777cba8c41bb5a083e13e6feb93afcd6e98b556eab6c4b7b17"
+    },
+    {
+      "type": "knowledge_ir",
       "id": "shared-rule-authoring-standard",
       "source": "knowledge/shared/rule-authoring-standard.md",
       "domain": "shared",
       "category": "rule-authoring-standard.mdc",
       "kind": "rule",
       "content": {
-        "raw": "---\ntitle: Rule Authoring Standard\nsummary: Authoring standards for creating and maintaining Cursor rule files\ndomain: shared\ncategory: rule-authoring-standard.mdc\napplies_to:\n  - \".cursor/rules/**/*.mdc\"\n  - \".cursor/rules/**/*.md\"\npriority: 50\nkind: rule\n---\n\n# Rule Authoring Standard\n\nاستاندارد نگارش Ruleها برای یکدستی، نگهداری ساده، و کاهش تداخل.\n\n## Structure\n\n- هر Rule باید frontmatter معتبر داشته باشد:\n  - `description`\n  - `alwaysApply` یا `globs` (بر اساس نیاز)\n- عنوان واضح و محتوای action-oriented داشته باشد.\n- یک Rule = یک concern اصلی (از ruleهای God پرهیز کن).\n\n## Placement Policy\n\n- قوانین **عمومی/جهان‌شمول** → `share/`\n- قوانین **تخصصی frontend** → `frontend/`\n- قوانین **تخصصی backend** → `backend/`\n- قوانین deprecated:\n  - `alwaysApply: false`\n  - در توضیح، `replaced by <path>` ذکر شود\n\n## AlwaysApply Budget\n\n- هدف پروژه: حداکثر **۵ Rule** با `alwaysApply: true`\n- `alwaysApply: true` فقط برای قواعد global و کم‌حجم در `share/`\n- Ruleهای domain-specific باید `alwaysApply: false` باشند و با `globs` دقیق فعال شوند\n- اگر Rule جدید نیاز به `alwaysApply: true` داشت:\n  1. دلیل صریح بنویس\n  2. اثر آن بر context window را بررسی کن\n  3. در صورت امکان یک Rule قدیمی را به حالت scoped تبدیل کن\n\n## Naming Convention\n\n- نام فایل‌ها: `kebab-case.mdc`\n- الگوی پیشنهادی:\n  - `<topic>-policy.mdc`\n  - `<topic>-checklist.mdc`\n  - `<topic>-standards.mdc`\n\n## Content Quality\n\n- قوانین کوتاه، شفاف، و قابل اجرا باشند.\n- از مثال‌های `Bad/Good` فقط وقتی کمک می‌کند استفاده کن.\n- تکرار محتوای موجود را به ارجاع تبدیل کن، نه کپی.\n- دستورات پرخطر باید صریحاً با guardrail همراه باشند.\n",
+        "raw": "---\ntitle: Rule Authoring Standard\nsummary: Authoring standards for creating and maintaining Cursor rule files\ndomain: shared\ncategory: rule-authoring-standard.mdc\napplies_to:\n  - \"knowledge/**/*.md\"\n  - \".kilo/**/*.md\"\n  - \".opencode/**/*.md\"\npriority: 50\nkind: rule\n---\n\n# Rule Authoring Standard\n\nاستاندارد نگارش Ruleها برای یکدستی، نگهداری ساده، و کاهش تداخل.\n\n## Structure\n\n- هر Rule باید metadata معتبر داشته باشد:\n  - `description`\n  - `applies_to` برای فعال‌سازی بر اساس مسیر\n- عنوان واضح و محتوای action-oriented داشته باشد.\n- یک Rule = یک concern اصلی (از ruleهای God پرهیز کن).\n\n## Placement Policy\n\n- قوانین **عمومی/جهان‌شمول** → `knowledge/shared/`\n- قوانین **تخصصی frontend** → `knowledge/frontend/`\n- قوانین **تخصصی backend** → `knowledge/backend/`\n- قوانین deprecated:\n  - `status: deprecated`\n  - در توضیح، `replaced by <path>` ذکر شود\n\n## AlwaysApply Budget\n\n- هدف پروژه: حداکثر **۵ Rule** با `priority` بالا و scope گسترده\n- `priority` بالا فقط برای قواعد global و کم‌حجم در `knowledge/shared/`\n- Ruleهای domain-specific باید با `applies_to` دقیق فعال شوند\n- اگر Rule جدید نیاز به scope گسترده داشت:\n  1. دلیل صریح بنویس\n  2. اثر آن بر context window را بررسی کن\n  3. در صورت امکان یک Rule قدیمی را به حالت scoped تبدیل کن\n\n## Naming Convention\n\n- نام فایل‌ها: `kebab-case.md`\n- الگوی پیشنهادی:\n  - `<topic>-policy.md`\n  - `<topic>-checklist.md`\n  - `<topic>-standards.md`\n\n## Content Quality\n\n- قوانین کوتاه، شفاف، و قابل اجرا باشند.\n- از مثال‌های `Bad/Good` فقط وقتی کمک می‌کند استفاده کن.\n- تکرار محتوای موجود را به ارجاع تبدیل کن، نه کپی.\n- دستورات پرخطر باید صریحاً با guardrail همراه باشند.\n",
         "summary": "Rule Authoring Standard",
         "key_points": [
-          "- \".cursor/rules/**/*.mdc\"",
-          "- \".cursor/rules/**/*.md\"",
-          "- هر Rule باید frontmatter معتبر داشته باشد:",
+          "- \"knowledge/**/*.md\"",
+          "- \".kilo/**/*.md\"",
+          "- \".opencode/**/*.md\"",
+          "- هر Rule باید metadata معتبر داشته باشد:",
           "- `description`",
-          "- `alwaysApply` یا `globs` (بر اساس نیاز)",
+          "- `applies_to` برای فعال‌سازی بر اساس مسیر",
           "- عنوان واضح و محتوای action-oriented داشته باشد.",
           "- یک Rule = یک concern اصلی (از ruleهای God پرهیز کن).",
-          "- قوانین **عمومی/جهان‌شمول** → `share/`",
-          "- قوانین **تخصصی frontend** → `frontend/`",
-          "- قوانین **تخصصی backend** → `backend/`",
+          "- قوانین **عمومی/جهان‌شمول** → `knowledge/shared/`",
+          "- قوانین **تخصصی frontend** → `knowledge/frontend/`",
+          "- قوانین **تخصصی backend** → `knowledge/backend/`",
           "- قوانین deprecated:",
-          "- `alwaysApply: false`",
+          "- `status: deprecated`",
           "- در توضیح، `replaced by <path>` ذکر شود",
-          "- هدف پروژه: حداکثر **۵ Rule** با `alwaysApply: true`",
-          "- `alwaysApply: true` فقط برای قواعد global و کم‌حجم در `share/`",
-          "- Ruleهای domain-specific باید `alwaysApply: false` باشند و با `globs` دقیق فعال شوند",
-          "- اگر Rule جدید نیاز به `alwaysApply: true` داشت:",
-          "- نام فایل‌ها: `kebab-case.mdc`",
-          "- الگوی پیشنهادی:",
-          "- `<topic>-policy.mdc`"
+          "- هدف پروژه: حداکثر **۵ Rule** با `priority` بالا و scope گسترده",
+          "- `priority` بالا فقط برای قواعد global و کم‌حجم در `knowledge/shared/`",
+          "- Ruleهای domain-specific باید با `applies_to` دقیق فعال شوند",
+          "- اگر Rule جدید نیاز به scope گسترده داشت:",
+          "- نام فایل‌ها: `kebab-case.md`",
+          "- الگوی پیشنهادی:"
         ],
         "sections": [
           "# Rule Authoring Standard",
@@ -4478,15 +4463,16 @@
       },
       "activation": {
         "file_patterns": [
-          ".cursor/rules/**/*.mdc",
-          ".cursor/rules/**/*.md"
+          "knowledge/**/*.md",
+          ".kilo/**/*.md",
+          ".opencode/**/*.md"
         ],
         "keywords": [
-          "\".cursor/rules/**/*.md\"",
-          "\".cursor/rules/**/*.mdc\"",
-          "`alwaysapply`",
+          "\".kilo/**/*.md\"",
+          "\".opencode/**/*.md\"",
+          "\"knowledge/**/*.md\"",
+          "`applies_to`",
           "`description`",
-          "`globs`",
           "applies_to:",
           "authoring",
           "category:",
@@ -4494,9 +4480,9 @@
           "cursor",
           "domain:",
           "files",
-          "frontmatter",
           "kind:",
           "maintaining",
+          "metadata",
           "priority:",
           "rule",
           "rule-authoring-standard.mdc",
@@ -4507,8 +4493,9 @@
       "priority": 50,
       "status": "active",
       "applies_to": [
-        ".cursor/rules/**/*.mdc",
-        ".cursor/rules/**/*.md"
+        "knowledge/**/*.md",
+        ".kilo/**/*.md",
+        ".opencode/**/*.md"
       ],
       "depends_on": [],
       "related": [],
@@ -4516,7 +4503,7 @@
         "depends_on": [],
         "related": []
       },
-      "checksum": "f4c9790777de48c06842819a13bd771f05d72a572c960a8a4a7eabedc70cb5cd"
+      "checksum": "63fa13ae1f71bc3464a46f0e0fe83da530ebd4bc9c649e630e25f05c9098b3f3"
     },
     {
       "type": "knowledge_ir",
@@ -4592,29 +4579,29 @@
       "category": "rules-audit-checklist.mdc",
       "kind": "workflow",
       "content": {
-        "raw": "---\ntitle: Rules Audit Checklist\nsummary: PR-ready checklist for auditing rule changes before merge\ndomain: shared\ncategory: rules-audit-checklist.mdc\napplies_to:\n  - \".cursor/rules/**/*.mdc\"\n  - \".cursor/rules/**/*.md\"\npriority: 50\nkind: workflow\n---\n\n# Rules Audit Checklist (PR)\n\nاین چک‌لیست قبل از merge تغییرات Ruleها در PR اجرا شود.\n\n## A) Scope and Placement\n\n- [ ] Rule جدید واقعاً عمومی است؟ اگر بله در `share/` قرار گرفته.\n- [ ] اگر domain-specific است، در `backend/` یا `frontend/` قرار گرفته.\n- [ ] Rule با Rule موجود overlap غیرضروری ندارد.\n\n## B) Frontmatter Validation\n\n- [ ] `description` واضح و کوتاه است.\n- [ ] `alwaysApply` فقط وقتی ضروری است `true` شده.\n- [ ] برای ruleهای file-specific، `globs` دقیق و کم‌هزینه است.\n\n## C) Conflict and Precedence\n\n- [ ] با `share/rule-precedence.mdc` همخوان است.\n- [ ] تعارض با ruleهای موجود بررسی شده و حل شده.\n- [ ] اگر rule دیگری جایگزین شده، مسیر جایگزین ذکر شده.\n\n## D) Content Quality\n\n- [ ] Rule actionable است (فقط توضیح نظری نیست).\n- [ ] متن تکراری به reference تبدیل شده.\n- [ ] مثال‌ها (در صورت وجود) دقیق و به‌روز هستند.\n- [ ] دستور ناایمن یا مبهم ندارد.\n\n## E) Documentation Sync\n\n- [ ] `share/README.md` در صورت نیاز به‌روزرسانی شده.\n- [ ] `rules/README.md` در صورت تغییر ساختار به‌روزرسانی شده.\n- [ ] راهنماهای دامنه (`BACKEND-RULES-GUIDE.md` / `FRONTEND-RULES-GUIDE.md`) در صورت تاثیر آپدیت شده‌اند.\n\n## F) PR Readiness\n\n- [ ] هدف تغییرات Ruleها در PR توضیح داده شده.\n- [ ] موارد ریسک/تعارض احتمالی ذکر شده.\n- [ ] plan بازگشت (revert) در صورت رفتار نامطلوب مشخص است.\n",
+        "raw": "---\ntitle: Rules Audit Checklist\nsummary: PR-ready checklist for auditing rule changes before merge\ndomain: shared\ncategory: rules-audit-checklist.mdc\napplies_to:\n  - \"knowledge/**/*.md\"\n  - \".kilo/**/*.md\"\n  - \".opencode/**/*.md\"\npriority: 50\nkind: workflow\n---\n\n# Rules Audit Checklist (PR)\n\nاین چک‌لیست قبل از merge تغییرات Ruleها در PR اجرا شود.\n\n## A) Scope and Placement\n\n- [ ] Rule جدید واقعاً عمومی است؟ اگر بله در `knowledge/shared/` قرار گرفته.\n- [ ] اگر domain-specific است، در `knowledge/backend/` یا `knowledge/frontend/` قرار گرفته.\n- [ ] Rule با Rule موجود overlap غیرضروری ندارد.\n\n## B) Frontmatter Validation\n\n- [ ] `description` واضح و کوتاه است.\n- [ ] `applies_to` دقیق و کم‌هزینه است.\n- [ ] برای ruleهای file-specific، `applies_to` مسیرهای محدود و کم‌هزینه دارد.\n\n## C) Conflict and Precedence\n\n- [ ] با `knowledge/shared/rule-precedence.md` همخوان است.\n- [ ] تعارض با ruleهای موجود بررسی شده و حل شده.\n- [ ] اگر rule دیگری جایگزین شده، مسیر جایگزین ذکر شده.\n\n## D) Content Quality\n\n- [ ] Rule actionable است (فقط توضیح نظری نیست).\n- [ ] متن تکراری به reference تبدیل شده.\n- [ ] مثال‌ها (در صورت وجود) دقیق و به‌روز هستند.\n- [ ] دستور ناایمن یا مبهم ندارد.\n\n## E) Documentation Sync\n\n- [ ] `knowledge/index.md` در صورت نیاز به‌روزرسانی شده.\n- [ ] `knowledge/README.md` در صورت ایجاد ساختار جدید به‌روزرسانی شده.\n- [ ] راهنماهای دامنه (`BACKEND-RULES-GUIDE.md` / `FRONTEND-RULES-GUIDE.md`) در صورت تاثیر آپدیت شده‌اند.\n\n## F) PR Readiness\n\n- [ ] هدف تغییرات Ruleها در PR توضیح داده شده.\n- [ ] موارد ریسک/تعارض احتمالی ذکر شده.\n- [ ] plan بازگشت (revert) در صورت رفتار نامطلوب مشخص است.\n",
         "summary": "Rules Audit Checklist",
         "key_points": [
-          "- \".cursor/rules/**/*.mdc\"",
-          "- \".cursor/rules/**/*.md\"",
-          "- [ ] Rule جدید واقعاً عمومی است؟ اگر بله در `share/` قرار گرفته.",
-          "- [ ] اگر domain-specific است، در `backend/` یا `frontend/` قرار گرفته.",
+          "- \"knowledge/**/*.md\"",
+          "- \".kilo/**/*.md\"",
+          "- \".opencode/**/*.md\"",
+          "- [ ] Rule جدید واقعاً عمومی است؟ اگر بله در `knowledge/shared/` قرار گرفته.",
+          "- [ ] اگر domain-specific است، در `knowledge/backend/` یا `knowledge/frontend/` قرار گرفته.",
           "- [ ] Rule با Rule موجود overlap غیرضروری ندارد.",
           "- [ ] `description` واضح و کوتاه است.",
-          "- [ ] `alwaysApply` فقط وقتی ضروری است `true` شده.",
-          "- [ ] برای ruleهای file-specific، `globs` دقیق و کم‌هزینه است.",
-          "- [ ] با `share/rule-precedence.mdc` همخوان است.",
+          "- [ ] `applies_to` دقیق و کم‌هزینه است.",
+          "- [ ] برای ruleهای file-specific، `applies_to` مسیرهای محدود و کم‌هزینه دارد.",
+          "- [ ] با `knowledge/shared/rule-precedence.md` همخوان است.",
           "- [ ] تعارض با ruleهای موجود بررسی شده و حل شده.",
           "- [ ] اگر rule دیگری جایگزین شده، مسیر جایگزین ذکر شده.",
           "- [ ] Rule actionable است (فقط توضیح نظری نیست).",
           "- [ ] متن تکراری به reference تبدیل شده.",
           "- [ ] مثال‌ها (در صورت وجود) دقیق و به‌روز هستند.",
           "- [ ] دستور ناایمن یا مبهم ندارد.",
-          "- [ ] `share/README.md` در صورت نیاز به‌روزرسانی شده.",
-          "- [ ] `rules/README.md` در صورت تغییر ساختار به‌روزرسانی شده.",
+          "- [ ] `knowledge/index.md` در صورت نیاز به‌روزرسانی شده.",
+          "- [ ] `knowledge/README.md` در صورت ایجاد ساختار جدید به‌روزرسانی شده.",
           "- [ ] راهنماهای دامنه (`BACKEND-RULES-GUIDE.md` / `FRONTEND-RULES-GUIDE.md`) در صورت تاثیر آپدیت شده‌اند.",
-          "- [ ] هدف تغییرات Ruleها در PR توضیح داده شده.",
-          "- [ ] موارد ریسک/تعارض احتمالی ذکر شده."
+          "- [ ] هدف تغییرات Ruleها در PR توضیح داده شده."
         ],
         "sections": [
           "# Rules Audit Checklist (PR)",
@@ -4629,16 +4616,17 @@
       },
       "activation": {
         "file_patterns": [
-          ".cursor/rules/**/*.mdc",
-          ".cursor/rules/**/*.md"
+          "knowledge/**/*.md",
+          ".kilo/**/*.md",
+          ".opencode/**/*.md"
         ],
         "keywords": [
-          "\".cursor/rules/**/*.md\"",
-          "\".cursor/rules/**/*.mdc\"",
+          "\".kilo/**/*.md\"",
+          "\".opencode/**/*.md\"",
+          "\"knowledge/**/*.md\"",
           "(pr)",
-          "`backend/`",
-          "`frontend/`",
-          "`share/`",
+          "`knowledge/",
+          "`knowledge/shared/`",
           "applies_to:",
           "audit",
           "auditing",
@@ -4658,8 +4646,9 @@
       "priority": 50,
       "status": "active",
       "applies_to": [
-        ".cursor/rules/**/*.mdc",
-        ".cursor/rules/**/*.md"
+        "knowledge/**/*.md",
+        ".kilo/**/*.md",
+        ".opencode/**/*.md"
       ],
       "depends_on": [],
       "related": [],
@@ -4667,7 +4656,7 @@
         "depends_on": [],
         "related": []
       },
-      "checksum": "95058ec3f245efd2ca2beb0d825d86cf267794f11c957c219e4928a457e5b72b"
+      "checksum": "7a8567e1d948b80a3246fc9c6eb23cf30d67cca45e31c145014907bd540a15d6"
     }
   ],
   "capabilities": [

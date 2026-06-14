@@ -12,7 +12,7 @@ kind: reference
 # Anti-Patterns
 
 قاعده‌های عمومی anti-pattern در
-`.cursor/rules/share/code-quality-baseline.mdc`
+`knowledge/shared/code-quality-baseline.md`
 تعریف شده‌اند. موارد این فایل مکمل backend هستند.
 
 * **God class** — کلاسی که همه کارها را انجام می‌دهد

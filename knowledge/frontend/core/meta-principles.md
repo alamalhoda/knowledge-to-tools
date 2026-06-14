@@ -14,7 +14,7 @@ kind: principle
 # Meta-Principles
 
 اصول پایه frontend. اصول جهان‌شمول در فایل اشتراکی تعریف شده‌اند:
-`.cursor/rules/share/engineering-principles.mdc`
+`knowledge/shared/engineering-principles.md`
 
 اگر اختلافی وجود داشت، rule تخصصی frontend در این فایل اولویت دارد.
 

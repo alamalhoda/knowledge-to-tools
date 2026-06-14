@@ -4,8 +4,9 @@ summary: PR-ready checklist for auditing rule changes before merge
 domain: shared
 category: rules-audit-checklist.mdc
 applies_to:
-  - ".cursor/rules/**/*.mdc"
-  - ".cursor/rules/**/*.md"
+  - "knowledge/**/*.md"
+  - ".kilo/**/*.md"
+  - ".opencode/**/*.md"
 priority: 50
 kind: workflow
 ---
@@ -16,19 +17,19 @@ kind: workflow
 
 ## A) Scope and Placement
 
-- [ ] Rule جدید واقعاً عمومی است؟ اگر بله در `share/` قرار گرفته.
-- [ ] اگر domain-specific است، در `backend/` یا `frontend/` قرار گرفته.
+- [ ] Rule جدید واقعاً عمومی است؟ اگر بله در `knowledge/shared/` قرار گرفته.
+- [ ] اگر domain-specific است، در `knowledge/backend/` یا `knowledge/frontend/` قرار گرفته.
 - [ ] Rule با Rule موجود overlap غیرضروری ندارد.
 
 ## B) Frontmatter Validation
 
 - [ ] `description` واضح و کوتاه است.
-- [ ] `alwaysApply` فقط وقتی ضروری است `true` شده.
-- [ ] برای ruleهای file-specific، `globs` دقیق و کم‌هزینه است.
+- [ ] `applies_to` دقیق و کم‌هزینه است.
+- [ ] برای ruleهای file-specific، `applies_to` مسیرهای محدود و کم‌هزینه دارد.
 
 ## C) Conflict and Precedence
 
-- [ ] با `share/rule-precedence.mdc` همخوان است.
+- [ ] با `knowledge/shared/rule-precedence.md` همخوان است.
 - [ ] تعارض با ruleهای موجود بررسی شده و حل شده.
 - [ ] اگر rule دیگری جایگزین شده، مسیر جایگزین ذکر شده.
 
@@ -41,8 +42,8 @@ kind: workflow
 
 ## E) Documentation Sync
 
-- [ ] `share/README.md` در صورت نیاز به‌روزرسانی شده.
-- [ ] `rules/README.md` در صورت تغییر ساختار به‌روزرسانی شده.
+- [ ] `knowledge/index.md` در صورت نیاز به‌روزرسانی شده.
+- [ ] `knowledge/README.md` در صورت ایجاد ساختار جدید به‌روزرسانی شده.
 - [ ] راهنماهای دامنه (`BACKEND-RULES-GUIDE.md` / `FRONTEND-RULES-GUIDE.md`) در صورت تاثیر آپدیت شده‌اند.
 
 ## F) PR Readiness
