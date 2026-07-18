@@ -16,6 +16,7 @@ from ir.runtime_payload import SerializedIRPayload
 from emitters.kilo import KiloEmitter
 from emitters.opencode import OpenCodeEmitter
 from emitters.cursor import CursorEmitter
+from emitters.claude import ClaudeEmitter
 
 
 def compute_source_hash(index: Dict[str, Any], agents: Dict[str, Any]) -> str:
@@ -121,7 +122,10 @@ def main() -> int:
     print("\n🔧 Emitting Cursor artifacts...")
     CursorEmitter().emit(ir_root, Path("aegis_output/cursor"))
 
-    print("\n🎉 Aegis v2 generation pipeline completed (IR → Kilo + OpenCode + Cursor).")
+    print("\n🔧 Emitting Claude Code artifacts...")
+    ClaudeEmitter().emit(ir_root, Path("aegis_output/claude"))
+
+    print("\n🎉 Aegis v2 generation pipeline completed (IR → Kilo + OpenCode + Cursor + Claude).")
     return 0
 
 
