@@ -137,20 +137,31 @@ def test_ir_determinism() -> bool:
 def test_emitter_output_exists() -> bool:
     """Test that emitters produce expected output files."""
     kilo_agents = Path("aegis_output/kilo/agents")
+    kilo_rules = Path("aegis_output/kilo/rules")
+    kilo_config = Path("aegis_output/kilo/kilo.jsonc")
     opencode_agents = Path("aegis_output/opencode/agents")
     opencode_config = Path("aegis_output/opencode/opencode.json")
     cursor_agents = Path("aegis_output/cursor/agents")
+    cursor_skills = Path("aegis_output/cursor/skills")
+    claude_agents = Path("aegis_output/claude/agents")
+    claude_rules = Path("aegis_output/claude/rules")
 
     assert kilo_agents.exists(), ".kilo/agents directory must exist"
     assert len(list(kilo_agents.glob("*.md"))) > 0, "Kilo agents must be generated"
+    assert kilo_rules.exists(), ".kilo/rules directory must exist"
+    assert kilo_config.exists(), "kilo.jsonc must be generated"
 
     assert opencode_agents.exists(), ".opencode/agents directory must exist"
-    assert len(list(opencode_agents.glob("*.json"))) > 0, "OpenCode agents must be generated"
+    assert len(list(opencode_agents.glob("*.md"))) > 0, "OpenCode agents must be generated"
 
     assert opencode_config.exists(), "opencode.json must be generated"
 
     assert cursor_agents.exists(), ".cursor/agents directory must exist"
     assert len(list(cursor_agents.glob("*.md"))) > 0, "Cursor agents must be generated"
+    assert cursor_skills.exists(), ".cursor/skills directory must exist"
+
+    assert claude_agents.exists(), ".claude/agents directory must exist"
+    assert claude_rules.exists(), ".claude/rules directory must exist"
 
     return True
 
@@ -162,9 +173,11 @@ def test_emitter_isolation() -> bool:
 
     emitter_files = [
         "emitters/base.py",
+        "emitters/common.py",
         "emitters/kilo.py",
         "emitters/opencode.py",
         "emitters/cursor.py",
+        "emitters/claude.py",
     ]
 
     prohibited_modules = [

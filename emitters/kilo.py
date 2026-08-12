@@ -1,27 +1,44 @@
 from __future__ import annotations
 
-from pathlib import Path
-from datetime import datetime, timezone
 import json
-from typing import Dict, Any, List, Optional
+from pathlib import Path
+from typing import Any, Dict, Optional
 
 from .base import BaseEmitter
+from .common import (
+    PRINCIPLE_KIND,
+    RULE_KINDS,
+    agent_color,
+    agent_mode,
+    agent_permissions,
+    agents_map,
+    docs_of_kind,
+    domain_of,
+    knowledge_docs,
+    merge_skill_sources,
+    normalize_name,
+    permission_action,
+    render_agent_prompt,
+    reset_output,
+    render_knowledge_body,
+    render_workflow_skill_body,
+    safe_write,
+    skill_description,
+    summary_of,
+    workflow_skill_description,
+    yaml_quote,
+)
 from ir.models import IRRoot
-
-
-def _now_iso() -> str:
-    return f"{datetime.now(timezone.utc).isoformat()}"
-
-
-def _safe_write(path: Path, content: str) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(content, encoding="utf-8")
 
 
 class KiloEmitter(BaseEmitter):
     """
-    Kilo-specific emitter — translates IRRoot to Kilo format.
-    Consumes IR only; does not read knowledge directly.
+    Kilo artifacts per docs/tool-contracts/kilo.md
+
+    rule/policy -> .kilo/rules/*.md + kilo.jsonc instructions
+    architecture/workflow/skill/reference + IR workflows -> .kilo/skills/<id>/SKILL.md
+    agents -> .kilo/agents/<id>.md
+    AGENTS.md -> principles + agent index
     """
 
     BASE_DIR = Path("aegis_output/kilo")
@@ -29,309 +46,143 @@ class KiloEmitter(BaseEmitter):
     def emit(self, ir: IRRoot, output_dir: Optional[Path] = None) -> None:
         ir_dict = self._ir_to_dict(ir)
         base = self._resolve_output_dir(output_dir)
+        reset_output(
+            base,
+            ["rules", "skills", "agents", "architecture", "workflows", "kilo.jsonc", "AGENTS.md"],
+        )
+        self._emit_rules(ir_dict, base)
         self._emit_skills(ir_dict, base)
-        self._emit_workflows(ir_dict, base)
-        self._emit_architecture(ir_dict, base)
         self._emit_agents(ir_dict, base)
-        print("🎉 KiloEmitter: All Kilo artifacts generated successfully!")
+        self._emit_config(base)
+        self._emit_agents_md(ir_dict, base)
+        print("KiloEmitter: Kilo artifacts generated.")
+
+    def _emit_rules(self, ir_dict: Dict[str, Any], base: Path) -> None:
+        rules_dir = base / "rules"
+        count = 0
+        for doc in docs_of_kind(knowledge_docs(ir_dict), RULE_KINDS):
+            rule_id = normalize_name(doc.get("id", "rule"))
+            body = render_knowledge_body(doc)
+            safe_write(rules_dir / f"{rule_id}.md", body + "\n")
+            count += 1
+        print(f"  Rules: {count} markdown files")
 
     def _emit_skills(self, ir_dict: Dict[str, Any], base: Path) -> None:
         skills_dir = base / "skills"
         count = 0
-
-        knowledge = ir_dict.get("knowledge", [])
-        if isinstance(knowledge, dict):
-            knowledge = list(knowledge.values())
-
-        for k in knowledge:
-            kind = k.get("kind")
-            if kind not in {"rule", "principle", "reference", "policy", "skill"}:
-                continue
-
-            skill_path = skills_dir / k["id"] / "SKILL.md"
-            summary = k.get("content", {}).get("summary", "")
-            raw = k.get("content", {}).get("raw", "")
+        for name, source, origin in merge_skill_sources(ir_dict):
+            if origin == "workflow":
+                description = workflow_skill_description(source)
+                body = render_workflow_skill_body(source)
+                kind = "workflow"
+                domain = source.get("domain", "shared")
+            else:
+                description = skill_description(source)
+                body = render_knowledge_body(source)
+                kind = source.get("kind", "skill")
+                domain = domain_of(source)
 
             content = (
                 f"---\n"
-                f"id: {k['id']}\n"
-                f"kind: {kind}\n"
-                f"domain: {k['domain']}\n"
+                f"name: {name}\n"
+                f"description: {yaml_quote(description)}\n"
+                f"metadata:\n"
+                f"  aegis_kind: {yaml_quote(str(kind))}\n"
+                f"  aegis_domain: {yaml_quote(str(domain))}\n"
                 f"---\n\n"
-                f"# {summary}\n\n"
-                f"{raw}\n\n"
-                f"---\n"
-                f"**Domain**: {k['domain']}  \n"
-                f"**Kind**: {kind}\n"
+                f"{body}\n"
             )
-
-            _safe_write(skill_path, content)
+            safe_write(skills_dir / name / "SKILL.md", content)
             count += 1
-
-        print(f"✔ SkillsEmitter: Generated {count} skills.")
-
-    def _workflow_index_path(self) -> Path:
-        return Path(__file__).resolve().parent.parent / "workflows" / "index.json"
-
-    def _load_workflow_index(self) -> List[Dict[str, Any]]:
-        index_path = self._workflow_index_path()
-        if not index_path.exists():
-            return []
-
-        try:
-            data = json.loads(index_path.read_text(encoding="utf-8"))
-        except json.JSONDecodeError as exc:
-            raise ValueError(f"Invalid workflow index at {index_path}: {exc}") from exc
-
-        workflows = data.values() if isinstance(data, dict) else data
-        return [
-            dict(workflow)
-            for workflow in workflows
-            if isinstance(workflow, dict) and isinstance(workflow.get("id"), str) and workflow["id"]
-        ]
-
-    def _workflow_nodes_from_knowledge(self, knowledge: List[Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
-        nodes: Dict[str, Dict[str, Any]] = {}
-
-        for k in knowledge:
-            if k.get("kind") != "workflow" or not isinstance(k.get("id"), str):
-                continue
-
-            nodes[k["id"]] = {
-                "id": k["id"],
-                "domain": k.get("domain", "shared"),
-                "content": {
-                    "summary": k.get("content", {}).get("summary", k["id"]),
-                    "raw": k.get("content", {}).get("raw", ""),
-                },
-            }
-
-        return nodes
-
-    def _workflow_index_node(self, workflow: Dict[str, Any]) -> Dict[str, Any]:
-        workflow_id = workflow["id"]
-        return {
-            "id": workflow_id,
-            "domain": workflow.get("domain", "shared"),
-            "content": {
-                "summary": workflow.get("name", workflow_id),
-                "raw": json.dumps(workflow, indent=2, ensure_ascii=False),
-            },
-        }
-
-    def _workflow_nodes(self, ir_dict: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
-        knowledge = ir_dict.get("knowledge", [])
-        if isinstance(knowledge, dict):
-            knowledge = list(knowledge.values())
-
-        nodes = self._workflow_nodes_from_knowledge(knowledge)
-        for workflow in self._load_workflow_index():
-            nodes[workflow["id"]] = self._workflow_index_node(workflow)
-
-        return nodes
-
-    def _emit_workflow_node(self, workflow: Dict[str, Any], wf_dir: Path) -> None:
-        workflow_id = workflow["id"]
-        path = wf_dir / workflow_id / "WORKFLOW.md"
-        summary = workflow.get("content", {}).get("summary", "")
-        raw = workflow.get("content", {}).get("raw", "")
-
-        content = (
-            f"---\n"
-            f"id: {workflow_id}\n"
-            f"kind: workflow\n"
-            f"domain: {workflow.get('domain', 'shared')}\n"
-            f"---\n\n"
-            f"# Workflow: {summary}\n\n"
-            f"{raw}\n"
-        )
-
-        _safe_write(path, content)
-
-    def _emit_workflows(self, ir_dict: Dict[str, Any], base: Path) -> None:
-        wf_dir = base / "workflows"
-        count = 0
-
-        for workflow in self._workflow_nodes(ir_dict).values():
-            self._emit_workflow_node(workflow, wf_dir)
-            count += 1
-
-        print(f"✔ WorkflowEmitter: Generated {count} workflows.")
-
-    def _emit_architecture(self, ir_dict: Dict[str, Any], base: Path) -> None:
-        arch_dir = base / "architecture"
-        count = 0
-
-        knowledge = ir_dict.get("knowledge", [])
-        if isinstance(knowledge, dict):
-            knowledge = list(knowledge.values())
-
-        for k in knowledge:
-            if k.get("kind") != "architecture":
-                continue
-
-            path = arch_dir / k["id"] / "BLUEPRINT.md"
-            summary = k.get("content", {}).get("summary", "")
-            raw = k.get("content", {}).get("raw", "")
-
-            content = (
-                f"---\n"
-                f"id: {k['id']}\n"
-                f"kind: architecture\n"
-                f"domain: {k['domain']}\n"
-                f"---\n\n"
-                f"# Architecture Blueprint: {summary}\n\n"
-                f"{raw}\n"
-            )
-
-            _safe_write(path, content)
-            count += 1
-
-        print(f"✔ ArchitectureEmitter: Generated {count} architectures.")
+        print(f"  Skills: {count} SKILL.md files")
 
     def _emit_agents(self, ir_dict: Dict[str, Any], base: Path) -> None:
         agents_dir = base / "agents"
-        agents_dir.mkdir(parents=True, exist_ok=True)
+        count = 0
+        for agent_id, agent in agents_map(ir_dict).items():
+            name = normalize_name(agent_id)
+            permissions = agent_permissions(agent)
+            description = yaml_quote(agent.get("description") or agent.get("role") or name)
+            content = (
+                f"---\n"
+                f"description: {description}\n"
+                f"mode: {agent_mode(agent)}\n"
+                f"color: {yaml_quote(agent_color(name))}\n"
+                f"permission:\n"
+                f"  edit: {permission_action(bool(permissions.get('edit', True)))}\n"
+                f"  bash: {permission_action(bool(permissions.get('shell', False)))}\n"
+                f"  read: {permission_action(bool(permissions.get('read', True)))}\n"
+                f"---\n\n"
+                f"{render_agent_prompt(agent)}"
+            )
+            safe_write(agents_dir / f"{name}.md", content)
+            count += 1
+        print(f"  Agents: {count} agent files")
 
-        agents_data = ir_dict.get("agents", {})
-        knowledge_list = ir_dict.get("knowledge", [])
-        if isinstance(knowledge_list, dict):
-            knowledge_list = list(knowledge_list.values())
+    def _emit_config(self, base: Path) -> None:
+        config = {
+            "instructions": [".kilo/rules/*.md"],
+            "skills": {
+                "paths": [".kilo/skills"],
+            },
+        }
+        safe_write(base / "kilo.jsonc", json.dumps(config, indent=2) + "\n")
+        print("  kilo.jsonc written")
 
-        summary_sections: List[str] = [
+    def _emit_agents_md(self, ir_dict: Dict[str, Any], base: Path) -> None:
+        docs = knowledge_docs(ir_dict)
+        principles = docs_of_kind(docs, {PRINCIPLE_KIND})
+        architecture = docs_of_kind(docs, {"architecture"})
+
+        lines = [
             "# Aegis Agents",
             "",
-            "_Generated automatically from Aegis Framework_",
+            "Generated from Aegis Framework. Copy this file to the project root.",
+            "Rules: `.kilo/rules/` via `kilo.jsonc` instructions. Skills: `.kilo/skills/`.",
+            "",
+            "## Principles",
             "",
         ]
+        if principles:
+            for doc in principles:
+                lines.append(f"- {summary_of(doc)}")
+        else:
+            lines.append("- None")
 
-        for agent_id, agent_ir in agents_data.items():
-            agent_file = agents_dir / f"{agent_id}.md"
+        lines.extend(["", "## Architecture pointers", ""])
+        if architecture:
+            for doc in architecture:
+                lines.append(
+                    f"- {domain_of(doc)}: {summary_of(doc)}. Details: skill `{normalize_name(doc.get('id', ''))}`"
+                )
+        else:
+            lines.append("- None")
 
-            matches = self._resolve_agent_skills(agent_ir, knowledge_list)
-
-            agent_md = self._render_kilo_agent_md(agent_id, agent_ir, matches)
-            _safe_write(agent_file, agent_md)
-
-            summary_sections.append(
-                self._render_summary_section(agent_id, agent_ir, matches)
+        lines.extend(["", "## Agents", ""])
+        for agent_id, agent in agents_map(ir_dict).items():
+            display = agent.get("display_name") or agent_id
+            role = agent.get("role") or ""
+            desc = agent.get("description") or ""
+            lines.extend(
+                [
+                    f"## Agent: {display}",
+                    "",
+                    f"**Internal ID:** `{agent_id}`",
+                    f"**Role:** {role}",
+                    f"**Description:** {desc}",
+                    "",
+                    "### Architecture Blueprints",
+                    ", ".join(agent.get("blueprints") or []) or "None",
+                    "",
+                    "### Operative Workflows",
+                    ", ".join(agent.get("workflows") or []) or "None",
+                    "",
+                    "### Active Skills",
+                    f"{len(agent.get('skills') or [])} items linked",
+                    "",
+                    "---",
+                    "",
+                ]
             )
-
-        _safe_write(Path(base / "AGENTS.md"), "\n".join(summary_sections))
-
-        print(f"✔ AgentsEmitter: Generated {len(agents_data)} agents in aegis_output/kilo/agents/ and AGENTS.md summary.")
-
-    def _resolve_agent_skills(self, agent_ir: Dict[str, Any], knowledge: List[Dict[str, Any]]) -> Dict[str, List[str]]:
-        domains = set(agent_ir.get("domains", []))
-        
-        matched_skills = []
-        matched_workflows = list(agent_ir.get("workflows", []))
-        matched_architecture = list(agent_ir.get("blueprints", []))
-        
-        for k in knowledge:
-            k_domain = k.get("domain", "")
-            k_kind = k.get("kind", "")
-            if k_domain not in domains and k_domain != "shared":
-                continue
-            
-            if k_kind in {"rule", "principle", "reference", "policy", "skill"}:
-                matched_skills.append(k["id"])
-            elif k_kind == "workflow" and k["id"] not in matched_workflows:
-                matched_workflows.append(k["id"])
-            elif k_kind == "architecture" and k["id"] not in matched_architecture:
-                matched_architecture.append(k["id"])
-        
-        return {
-            "skills": matched_skills,
-            "workflows": matched_workflows,
-            "architecture": matched_architecture
-        }
-
-    def _render_kilo_agent_md(self, agent_id: str, meta: Dict[str, Any], matches: Dict[str, List[str]]) -> str:
-        display = meta.get("display_name", agent_id)
-        role = meta.get("role", "")
-        desc = meta.get("description", "")
-
-        permissions = meta.get("permissions", {})
-        bash_perm = "allow" if permissions.get("shell") else "deny"
-        edit_perm = "allow" if permissions.get("edit", True) else "deny"
-
-        frontmatter = f"""---
-name: {agent_id}
-display_name: {display}
-description: {desc}
-mode: primary
-color: "#3B82F6"
-
-permission:
-   edit: {edit_perm}
-   bash: {bash_perm}
-   read: allow
-
-context:
-   - .kilo/skills
-   - .kilo/workflows
-   - .kilo/architecture
-
-steps: 30
----
-"""
-
-        arch = "\n".join(f"- {x}" for x in matches["architecture"]) or "- None"
-        wf = "\n".join(f"- {x}" for x in matches["workflows"]) or "- None"
-        skills = "\n".join(f"- {x}" for x in matches["skills"]) or "- None"
-
-        body = f"""You are **{display}** — {role}
-
-{desc}
-
-## Knowledge Bindings (Aegis)
-
-### Architecture
-{arch}
-
-### Workflows
-{wf}
-
-### Skills / Rules
-{skills}
-
-## Core Behavior
-
-Planning: {meta.get("behavior", {}).get("planning", "preferred")}
-Testing: {meta.get("behavior", {}).get("testing", "preferred")}
-Review Style: {meta.get("behavior", {}).get("review_style", "balanced")}
-
-Follow Aegis engineering principles strictly.
-Always consult the linked knowledge when making decisions.
-"""
-
-        return frontmatter + body
-
-    def _render_summary_section(self, agent_id: str, meta: Dict[str, Any], matches: Dict[str, List[str]]) -> str:
-        display = meta.get("display_name", agent_id)
-        role = meta.get("role", "")
-        desc = meta.get("description", "")
-
-        arch = ", ".join(matches["architecture"]) or "None"
-        wf = ", ".join(matches["workflows"]) or "None"
-        skills_count = len(matches["skills"])
-
-        return f"""
-## 🤖 Agent: {display}
-
-**Internal ID:** `{agent_id}`  
-**Role:** {role}  
-**Description:** {desc}
-
-### Architecture Blueprints
-{arch}
-
-### Operative Workflows
-{wf}
-
-### Active Skills / Rules
-{skills_count} items linked
-
----
-"""
+        safe_write(base / "AGENTS.md", "\n".join(lines))
+        print("  AGENTS.md written")

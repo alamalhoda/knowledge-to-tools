@@ -1,26 +1,45 @@
 from __future__ import annotations
 
 from pathlib import Path
-from datetime import datetime, timezone
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 from .base import BaseEmitter
+from .common import (
+    PRINCIPLE_KIND,
+    RULE_KINDS,
+    agent_readonly,
+    agents_map,
+    cursor_always_apply,
+    docs_of_kind,
+    domain_of,
+    file_patterns,
+    high_priority_docs,
+    kind_of,
+    knowledge_docs,
+    merge_skill_sources,
+    normalize_name,
+    reset_output,
+    render_agent_prompt,
+    render_knowledge_body,
+    render_workflow_skill_body,
+    safe_write,
+    skill_description,
+    summary_of,
+    workflow_skill_description,
+    yaml_block_list,
+    yaml_quote,
+)
 from ir.models import IRRoot
-
-
-def _now_iso() -> str:
-    return f"{datetime.now(timezone.utc).isoformat()}"
-
-
-def _safe_write(path: Path, content: str) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(content, encoding="utf-8")
 
 
 class CursorEmitter(BaseEmitter):
     """
-    Cursor-specific emitter — translates IRRoot to Cursor format.
-    Consumes IR only; does not read knowledge directly.
+    Cursor artifacts per docs/tool-contracts/cursor.md
+
+    rule/policy/principle -> .cursor/rules/*.mdc
+    architecture/workflow/skill/reference + IR workflows -> .cursor/skills/<id>/SKILL.md
+    agents -> .cursor/agents/<id>.md
+    AGENTS.md -> high-priority principles + agent index
     """
 
     BASE_DIR = Path("aegis_output/cursor")
@@ -28,77 +47,115 @@ class CursorEmitter(BaseEmitter):
     def emit(self, ir: IRRoot, output_dir: Optional[Path] = None) -> None:
         ir_dict = self._ir_to_dict(ir)
         base = self._resolve_output_dir(output_dir)
+        reset_output(base, ["rules", "skills", "agents", "AGENTS.md"])
+        self._emit_rules(ir_dict, base)
+        self._emit_skills(ir_dict, base)
+        self._emit_agents(ir_dict, base)
+        self._emit_agents_md(ir_dict, base)
+        print("CursorEmitter: Cursor artifacts generated.")
+
+    def _emit_rules(self, ir_dict: Dict[str, Any], base: Path) -> None:
         rules_dir = base / "rules"
+        count = 0
+        for doc in docs_of_kind(knowledge_docs(ir_dict), RULE_KINDS | {PRINCIPLE_KIND}):
+            rule_id = normalize_name(doc.get("id", "rule"))
+            safe_write(rules_dir / f"{rule_id}.mdc", self._render_rule(doc))
+            count += 1
+        print(f"  Rules: {count} .mdc files")
+
+    def _render_rule(self, doc: Dict[str, Any]) -> str:
+        patterns = file_patterns(doc)
+        always_apply = cursor_always_apply(doc)
+        description = skill_description(doc, limit=500)
+        lines = ["---", f"description: {yaml_quote(description)}"]
+        if always_apply:
+            lines.append("alwaysApply: true")
+        else:
+            lines.append("alwaysApply: false")
+            if patterns:
+                lines.append(yaml_block_list("globs", patterns).rstrip())
+        lines.extend(["---", "", render_knowledge_body(doc), ""])
+        return "\n".join(lines)
+
+    def _emit_skills(self, ir_dict: Dict[str, Any], base: Path) -> None:
+        skills_dir = base / "skills"
+        count = 0
+        for name, source, origin in merge_skill_sources(ir_dict):
+            if origin == "workflow":
+                description = workflow_skill_description(source)
+                body = render_workflow_skill_body(source)
+                paths: List[str] = []
+                disable_model = False
+            else:
+                description = skill_description(source)
+                body = render_knowledge_body(source)
+                paths = file_patterns(source)
+                disable_model = kind_of(source) == "workflow"
+
+            front = ["---", f"name: {name}", f"description: {yaml_quote(description)}"]
+            if paths:
+                front.append(yaml_block_list("paths", paths).rstrip())
+            if disable_model:
+                front.append("disable-model-invocation: true")
+            front.extend(["---", "", body, ""])
+            safe_write(skills_dir / name / "SKILL.md", "\n".join(front))
+            count += 1
+        print(f"  Skills: {count} SKILL.md files")
+
+    def _emit_agents(self, ir_dict: Dict[str, Any], base: Path) -> None:
         agents_dir = base / "agents"
-        count_rules = 0
-        count_agents = 0
+        count = 0
+        for agent_id, agent in agents_map(ir_dict).items():
+            name = normalize_name(agent_id)
+            readonly = "true" if agent_readonly(agent) else "false"
+            description = yaml_quote(agent.get("description") or agent.get("role") or name)
+            content = (
+                f"---\n"
+                f"name: {name}\n"
+                f"description: {description}\n"
+                f"model: inherit\n"
+                f"readonly: {readonly}\n"
+                f"---\n\n"
+                f"{render_agent_prompt(agent)}"
+            )
+            safe_write(agents_dir / f"{name}.md", content)
+            count += 1
+        print(f"  Agents: {count} subagent files")
 
-        knowledge = ir_dict.get("knowledge", [])
-        if isinstance(knowledge, dict):
-            knowledge = list(knowledge.values())
+    def _emit_agents_md(self, ir_dict: Dict[str, Any], base: Path) -> None:
+        docs = knowledge_docs(ir_dict)
+        principles = high_priority_docs(docs, {PRINCIPLE_KIND}) or docs_of_kind(docs, {PRINCIPLE_KIND})
+        architecture = docs_of_kind(docs, {"architecture"})
 
-        for doc in knowledge:
-            kind = doc.get("kind")
-            if kind not in {"rule", "principle", "reference", "policy"}:
-                continue
+        lines = [
+            "# Aegis Project Instructions",
+            "",
+            "Project rules live in `.cursor/rules/`. On-demand knowledge lives in `.cursor/skills/`.",
+            "Specialized roles live in `.cursor/agents/`.",
+            "",
+            "## Principles",
+            "",
+        ]
+        if principles:
+            for doc in principles:
+                lines.append(f"- {summary_of(doc)}")
+        else:
+            lines.append("- None")
 
-            rule_path = rules_dir / f"{doc['id']}.mdc"
-            raw = doc.get("content", {}).get("raw", "")
+        lines.extend(["", "## Architecture pointers", ""])
+        if architecture:
+            for doc in architecture:
+                lines.append(
+                    f"- {domain_of(doc)}: {summary_of(doc)}. Details: skill `{normalize_name(doc.get('id', ''))}`"
+                )
+        else:
+            lines.append("- None")
 
-            content = f"""---
-title: {doc.get('content', {}).get('summary', '')}
-description: {doc.get('domain', '')} - {kind}
-globs:
-{self._format_globs(doc.get('activation', {}).get('file_patterns', []))}
-alwaysApply: false
----
-
-{raw}
-
-<!-- Cursor Rule Reference -->
-<!-- Generated: {_now_iso()} -->
-<!-- Domain: {doc.get('domain', '')} -->
-"""
-
-            _safe_write(rule_path, content)
-            count_rules += 1
-
-        print(f"✔ RulesEmitter: Generated {count_rules} rules.")
-
-        for agent_id, agent_ir in ir_dict.get("agents", {}).items():
-            agent_file = agents_dir / f"{agent_id}.md"
-
-            content = f"""---
-name: {agent_id}
-displayName: {agent_ir.get('display_name', agent_id)}
-description: {agent_ir.get('description', '')}
-version: 2.0
----
-
-# {agent_ir.get('display_name', agent_id)}
-
-{agent_ir.get('role', '')}
-
-## Knowledge
-
-**Domains:** {', '.join(agent_ir.get('domains', []))}
-
-**Skills:** {len(agent_ir.get('skills', []))} items
-
-**Workflows:** {', '.join(agent_ir.get('workflows', []))}
-
-## Behavior
-
-- Planning: {agent_ir.get('behavior', {}).get('planning', 'preferred')}
-- Testing: {agent_ir.get('behavior', {}).get('testing', 'preferred')}
-- Review: {agent_ir.get('behavior', {}).get('review_style', 'balanced')}
-"""
-
-            _safe_write(agent_file, content)
-            count_agents += 1
-
-        print(f"✔ AgentsEmitter: Generated {count_agents} agent definitions.")
-        print("🎉 CursorEmitter: All Cursor artifacts generated successfully!")
-
-    def _format_globs(self, patterns: List[str]) -> str:
-        return "\n".join(f"  - {p}" for p in patterns[:10]) if patterns else ""
+        lines.extend(["", "## Agents", ""])
+        for agent_id, agent in agents_map(ir_dict).items():
+            display = agent.get("display_name") or agent_id
+            desc = agent.get("description") or agent.get("role") or ""
+            lines.append(f"- `{agent_id}` ({display}): {desc}")
+        lines.append("")
+        safe_write(base / "AGENTS.md", "\n".join(lines))
+        print("  AGENTS.md written")

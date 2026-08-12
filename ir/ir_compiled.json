@@ -1,7 +1,7 @@
 {
   "version": "2.0",
-  "generated_at": "2024-08-30T23:38:54Z",
-  "source_hash": "482e3277e027eeca6b3f54e166d0f3651c0a9d216eeb8d5e6a0336b2e47d8147",
+  "generated_at": "2023-12-26T19:51:25Z",
+  "source_hash": "211fd1329484097e4627d46b5b11746513fc906c8e10f3d98f874d3ca47259a1",
   "knowledge": [
     {
       "type": "knowledge_ir",
@@ -311,7 +311,7 @@
       "category": "core",
       "kind": "principle",
       "content": {
-        "raw": "---\ntitle: Design Principles\nsummary: Backend design principles and examples aligned with shared engineering principles\ndomain: backend\ncategory: core\napplies_to:\n  - \"backend/**/*.py\"\npriority: 50\nkind: principle\n---\n\n# Design Principles (اصول طراحی)\n\nراهنمای طراحی backend Django با مثال‌های عملی.\n\n**English:** Backend-focused design guidance for Django with practical examples.\n\n---\n\n## Shared Source of Truth\n\n- اصول عمومی (SSOT/SoC/DRY/KISS/YAGNI/Explicitness) در\n  `knowledge/shared/engineering-principles.md` تعریف شده‌اند.\n- اگر اختلافی وجود داشت، rule تخصصی backend در این فایل اولویت دارد.\n\n---\n\n## God Class (کلاس خدا) — نقض SRP\n\n**توضیح:** کلاسی که چندین مسئولیت دارد و باید به کلاس‌های کوچک‌تر تقسیم شود.\n\n**Explanation:** A class with multiple responsibilities that should be split into smaller, focused classes.\n\n❌ نادرست / Wrong:\n\n```python\nclass OrderManager:\n    \"\"\"همه کارها در یک کلاس — نقض SRP\"\"\"\n\n    def create(self, user, data):\n        self._validate(data)\n        order = Order.objects.create(**data, user=user)\n        self._send_notification(order)\n        return order\n\n    def cancel(self, order):\n        if order.status != \"PENDING\":\n            raise ValidationError(\"Cannot cancel\")\n        order.status = \"CANCELLED\"\n        order.save()\n        self._send_refund(order)\n\n    def refund(self, order):\n        # منطق refund...\n        pass\n\n    def _validate(self, data): ...\n    def _send_notification(self, order): ...\n    def _send_refund(self, order): ...\n```\n\n✅ درست / Correct:\n\n```python\nclass CreateOrderService:\n    def execute(self, user, validated_data):\n        return Order.objects.create(**validated_data, user=user)\n\n\nclass CancelOrderService:\n    def execute(self, order):\n        if order.status != OrderStatus.PENDING:\n            raise DomainError(\"Cannot cancel\")\n        order.status = OrderStatus.CANCELLED\n        order.save()\n        return order\n\n\nclass OrderNotificationService:\n    def send_created(self, order): ...\n    def send_cancelled(self, order): ...\n```\n\n---\n\n## Single Source of Truth (SSOT) — منبع یگانه حقیقت\n\n**توضیح:** هر منطق (مثل validation، محاسبه مالیات) باید در یک جا تعریف شود. تکرار در چند فایل نقض SSOT است.\n\n**Explanation:** Each logic (e.g., validation, tax calculation) must be defined in one place. Duplicating across files violates SSOT.\n\n❌ نادرست / Wrong:\n\n```python\n# در views.py\ndef create_order(request):\n    if request.user.profile.balance < 0:\n        raise ValidationError(\"No balance\")\n\n# در serializers.py — همان منطق تکرار شده!\nclass OrderSerializer(serializers.ModelSerializer):\n    def validate(self, attrs):\n        if self.context[\"request\"].user.profile.balance < 0:\n            raise ValidationError(\"No balance\")\n```\n\n✅ درست / Correct:\n\n```python\n# فقط در service — یک منبع حقیقت\nclass CreateOrderService:\n    def execute(self, user, validated_data):\n        if user.profile.balance < 0:\n            raise DomainError(\"موجودی کافی نیست / Insufficient balance\")\n        return Order.objects.create(**validated_data, user=user)\n\n\n# در serializer — فقط فراخوانی service\nclass OrderSerializer(serializers.ModelSerializer):\n    def create(self, validated_data):\n        return CreateOrderService().execute(\n            user=self.context[\"request\"].user,\n            validated_data=validated_data,\n        )\n```\n\n---\n\n## DRY — تکرار نکن\n\n**توضیح:** اگر منطق در دو جا تکرار شد، آن را به تابع یا کلاس واحد استخراج کن.\n\n**Explanation:** If logic is duplicated in two places, extract it into a single function or class.\n\n❌ نادرست / Wrong:\n\n```python\n# در چند جا تکرار شده\ndef register_user(email, password):\n    if len(password) < 8:\n        raise ValidationError(\"Password too short\")\n\ndef change_password(user, new_password):\n    if len(new_password) < 8:\n        raise ValidationError(\"Password too short\")\n```\n\n✅ درست / Correct:\n\n```python\nMIN_PASSWORD_LENGTH = 8\n\n\ndef validate_password(password: str) -> None:\n    if len(password) < MIN_PASSWORD_LENGTH:\n        raise ValidationError(\"رمز عبور حداقل ۸ کاراکتر باشد\")\n\n\ndef register_user(email: str, password: str):\n    validate_password(password)\n    # ...\n\n\ndef change_password(user, new_password: str):\n    validate_password(new_password)\n    # ...\n```\n\n---\n\n## Separation of Concerns (SoC) — جداسازی دغدغه‌ها\n\n**توضیح:** View فقط orchestration؛ Service برای business logic؛ Serializer فقط validation و serialization.\n\n**Explanation:** View only orchestrates; Service holds business logic; Serializer only validates and serializes.\n\n❌ نادرست / Wrong:\n\n```python\n# business logic در View\nclass OrderViewSet(ModelViewSet):\n    def create(self, request):\n        if request.user.profile.balance < 0:\n            raise ValidationError(\"No balance\")\n        order = Order.objects.create(\n            user=request.user,\n            total=request.data[\"total\"],\n        )\n        send_email(order.user.email, \"Order created\")\n        return Response(OrderSerializer(order).data)\n```\n\n✅ درست / Correct:\n\n```python\n# View فقط orchestration\nclass OrderViewSet(ModelViewSet):\n    def create(self, request):\n        serializer = self.get_serializer(data=request.data)\n        serializer.is_valid(raise_exception=True)\n        order = CreateOrderService().execute(\n            user=request.user,\n            validated_data=serializer.validated_data,\n        )\n        return Response(OrderSerializer(order).data, status=201)\n\n\n# Service — business logic\nclass CreateOrderService:\n    def execute(self, user, validated_data):\n        if user.profile.balance < 0:\n            raise DomainError(\"Insufficient balance\")\n        order = Order.objects.create(user=user, **validated_data)\n        OrderNotificationService().send_created(order)\n        return order\n```\n",
+        "raw": "---\ntitle: Design Principles\nsummary: Backend design principles and examples aligned with shared engineering principles\ndomain: backend\ncategory: core\napplies_to:\n  - \"backend/**/*.py\"\npriority: 50\nkind: principle\n---\n\n# Design Principles (اصول طراحی)\n\nراهنمای طراحی backend Django با مثال‌های عملی.\n\n**English:** Backend-focused design guidance for Django with practical examples.\n\n---\n\n## Shared Source of Truth\n\n- اصول عمومی (SSOT/SoC/DRY/KISS/YAGNI/Explicitness) در\n  `knowledge/shared/engineering-principles.md` تعریف شده‌اند.\n- اگر اختلافی وجود داشت، rule تخصصی backend در این فایل اولویت دارد.\n\n---\n\n## God Class (کلاس خدا) — نقض SRP\n\n**توضیح:** کلاسی که چندین مسئولیت دارد و باید به کلاس‌های کوچک‌تر تقسیم شود.\n\n**Explanation:** A class with multiple responsibilities that should be split into smaller, focused classes.\n\n❌ نادرست / Wrong:\n\n```python\nclass OrderManager:\n    \"\"\"همه کارها در یک کلاس — نقض SRP\"\"\"\n\n    def create(self, user, data):\n        self._validate(data)\n        order = Order.objects.create(**data, user=user)\n        self._send_notification(order)\n        return order\n\n    def cancel(self, order):\n        if order.status != \"PENDING\":\n            raise ValidationError(\"Cannot cancel\")\n        order.status = \"CANCELLED\"\n        order.save()\n        self._send_refund(order)\n\n    def refund(self, order):\n        # منطق refund...\n        pass\n\n    def _validate(self, data): ...\n    def _send_notification(self, order): ...\n    def _send_refund(self, order): ...\n```\n\n✅ درست / Correct:\n\n```python\nclass CreateOrderService:\n    def execute(self, user, validated_data):\n        return Order.objects.create(**validated_data, user=user)\n\n\nclass CancelOrderService:\n    def execute(self, order):\n        if order.status != OrderStatus.PENDING:\n            raise DomainError(\"Cannot cancel\")\n        order.status = OrderStatus.CANCELLED\n        order.save()\n        return order\n\n\nclass OrderNotificationService:\n    def send_created(self, order): ...\n    def send_cancelled(self, order): ...\n```\n\n---\n\n## Single Source of Truth (SSOT) — منبع یگانه حقیقت\n\n**توضیح:** هر منطق (مثل validation، محاسبه مالیات) باید در یک جا تعریف شود. تکرار در چند فایل نقض SSOT است.\n\n**Explanation:** Each logic (e.g., validation, tax calculation) must be defined in one place. Duplicating across files violates SSOT.\n\n❌ نادرست / Wrong:\n\n```python\n# در views.py\ndef create_order(request):\n    if request.user.profile.balance < 0:\n        raise ValidationError(\"No balance\")\n\n# در serializers.py — همان منطق تکرار شده!\nclass OrderSerializer(serializers.ModelSerializer):\n    def validate(self, attrs):\n        if self.context[\"request\"].user.profile.balance < 0:\n            raise ValidationError(\"No balance\")\n```\n\n✅ درست / Correct:\n\n```python\n# فقط در service — یک منبع حقیقت\nclass CreateOrderService:\n    def execute(self, user, validated_data):\n        if user.profile.balance < 0:\n            raise DomainError(\"موجودی کافی نیست / Insufficient balance\")\n        return Order.objects.create(**validated_data, user=user)\n\n\n# در serializer — فقط فراخوانی service\nclass OrderSerializer(serializers.ModelSerializer):\n    def create(self, validated_data):\n        return CreateOrderService().execute(\n            user=self.context[\"request\"].user,\n            validated_data=validated_data,\n        )\n```\n\n---\n\n## DRY — تکرار نکن\n\n**توضیح:** اگر منطق در دو جا تکرار شد، آن را به تابع یا کلاس واحد استخراج کن.\n\n**Explanation:** If logic is duplicated in two places, extract it into a single function or class.\n\n❌ نادرست / Wrong:\n\n```python\n# در چند جا تکرار شده\ndef register_user(email, password):\n    if len(password) < 8:\n        raise ValidationError(\"Password too short\")\n\ndef change_password(user, new_password):\n    if len(new_password) < 8:\n        raise ValidationError(\"Password too short\")\n```\n\n✅ درست / Correct:\n\n```python\nMIN_PASSWORD_LENGTH = 8\n\n\ndef validate_password(password: str) -> None:\n    if len(password) < MIN_PASSWORD_LENGTH:\n        raise ValidationError(\"رمز عبور حداقل ۸ کاراکتر باشد\")\n\n\ndef register_user(email: str, password: str):\n    validate_password(password)\n    # ...\n\n\ndef change_password(user, new_password: str):\n    validate_password(new_password)\n    # ...\n```\n\n---\n\n## Separation of Concerns (SoC) — جداسازی دغدغه‌ها\n\n**توضیح:** View فقط orchestration؛ Service برای business logic؛ Serializer فقط validation و serialization.\n\n**Explanation:** View only orchestrates; Service holds business logic; Serializer only validates and serializes.\n\nقرارگیری لایه‌ها، ViewSet-only، و مثال‌های کد در\n`knowledge/backend/architecture/django-architecture.md`\nتعریف شده‌اند.\n",
         "summary": "Design Principles",
         "key_points": [
           "- \"backend/**/*.py\"",
@@ -331,9 +331,7 @@
           "❌ نادرست / Wrong:",
           "✅ درست / Correct:",
           "**توضیح:** View فقط orchestration؛ Service برای business logic؛ Serializer فقط validation و serialization.",
-          "**Explanation:** View only orchestrates; Service holds business logic; Serializer only validates and serializes.",
-          "❌ نادرست / Wrong:",
-          "✅ درست / Correct:"
+          "**Explanation:** View only orchestrates; Service holds business logic; Serializer only validates and serializes."
         ],
         "sections": [
           "# Design Principles (اصول طراحی)",
@@ -349,10 +347,7 @@
           "# در چند جا تکرار شده",
           "# ...",
           "# ...",
-          "## Separation of Concerns (SoC) — جداسازی دغدغه‌ها",
-          "# business logic در View",
-          "# View فقط orchestration",
-          "# Service — business logic"
+          "## Separation of Concerns (SoC) — جداسازی دغدغه‌ها"
         ],
         "code_blocks": [
           "class OrderManager:\n    \"\"\"همه کارها در یک کلاس — نقض SRP\"\"\"\n\n    def create(self, user, data):\n        self._validate(data)\n        order = Order.objects.create(**data, user=user)\n        self._send_notification(order)\n        return order\n\n    def cancel(self, order):\n        if order.status != \"PENDING\":\n            raise ValidationError(\"Cannot cancel\")\n        order.status = \"CANCELLED\"\n        order.save()\n        self._send_refund(order)\n\n    def refund(self, order):\n        # منطق refund...\n        pass\n\n    def _validate(self, data): ...\n    def _send_notification(self, order): ...\n    def _send_refund(self, order): ...",
@@ -360,9 +355,7 @@
           "# در views.py\ndef create_order(request):\n    if request.user.profile.balance < 0:\n        raise ValidationError(\"No balance\")\n\n# در serializers.py — همان منطق تکرار شده!\nclass OrderSerializer(serializers.ModelSerializer):\n    def validate(self, attrs):\n        if self.context[\"request\"].user.profile.balance < 0:\n            raise ValidationError(\"No balance\")",
           "# فقط در service — یک منبع حقیقت\nclass CreateOrderService:\n    def execute(self, user, validated_data):\n        if user.profile.balance < 0:\n            raise DomainError(\"موجودی کافی نیست / Insufficient balance\")\n        return Order.objects.create(**validated_data, user=user)\n\n\n# در serializer — فقط فراخوانی service\nclass OrderSerializer(serializers.ModelSerializer):\n    def create(self, validated_data):\n        return CreateOrderService().execute(\n            user=self.context[\"request\"].user,\n            validated_data=validated_data,\n        )",
           "# در چند جا تکرار شده\ndef register_user(email, password):\n    if len(password) < 8:\n        raise ValidationError(\"Password too short\")\n\ndef change_password(user, new_password):\n    if len(new_password) < 8:\n        raise ValidationError(\"Password too short\")",
-          "MIN_PASSWORD_LENGTH = 8\n\n\ndef validate_password(password: str) -> None:\n    if len(password) < MIN_PASSWORD_LENGTH:\n        raise ValidationError(\"رمز عبور حداقل ۸ کاراکتر باشد\")\n\n\ndef register_user(email: str, password: str):\n    validate_password(password)\n    # ...\n\n\ndef change_password(user, new_password: str):\n    validate_password(new_password)\n    # ...",
-          "# business logic در View\nclass OrderViewSet(ModelViewSet):\n    def create(self, request):\n        if request.user.profile.balance < 0:\n            raise ValidationError(\"No balance\")\n        order = Order.objects.create(\n            user=request.user,\n            total=request.data[\"total\"],\n        )\n        send_email(order.user.email, \"Order created\")\n        return Response(OrderSerializer(order).data)",
-          "# View فقط orchestration\nclass OrderViewSet(ModelViewSet):\n    def create(self, request):\n        serializer = self.get_serializer(data=request.data)\n        serializer.is_valid(raise_exception=True)\n        order = CreateOrderService().execute(\n            user=request.user,\n            validated_data=serializer.validated_data,\n        )\n        return Response(OrderSerializer(order).data, status=201)\n\n\n# Service — business logic\nclass CreateOrderService:\n    def execute(self, user, validated_data):\n        if user.profile.balance < 0:\n            raise DomainError(\"Insufficient balance\")\n        order = Order.objects.create(user=user, **validated_data)\n        OrderNotificationService().send_created(order)\n        return order"
+          "MIN_PASSWORD_LENGTH = 8\n\n\ndef validate_password(password: str) -> None:\n    if len(password) < MIN_PASSWORD_LENGTH:\n        raise ValidationError(\"رمز عبور حداقل ۸ کاراکتر باشد\")\n\n\ndef register_user(email: str, password: str):\n    validate_password(password)\n    # ...\n\n\ndef change_password(user, new_password: str):\n    validate_password(new_password)\n    # ..."
         ]
       },
       "activation": {
@@ -403,7 +396,7 @@
         "depends_on": [],
         "related": []
       },
-      "checksum": "80117b0aeef8be70ab588ef6c1cb21ebcbfb4df82db032536ca40cb127d261f9"
+      "checksum": "663fd0362314ad66facc50c87bdd71669903530886d06fc9eecc22a3097debc4"
     },
     {
       "type": "knowledge_ir",
@@ -413,34 +406,27 @@
       "category": "core",
       "kind": "reference",
       "content": {
-        "raw": "---\ntitle: Quick Reference\nsummary: Quick Reference — AI Checklist برای backend Django\ndomain: backend\ncategory: core\napplies_to:\n  - \"backend/**/*.py\"\npriority: 50\nkind: reference\n---\n\n# Quick Reference (AI Checklist)\n\nچک‌لیست سریع قبل از ارائه کد. هر مورد را بررسی کن.\n\n**English:** Quick checklist before submitting code. Verify each item.\n\n---\n\n## 1. Permission دارد؟ / Permissions defined?\n\nViewSetها باید `permission_classes` و در صورت نیاز `throttle_classes` داشته باشند.\n\n**English:** ViewSets must have `permission_classes` and optionally `throttle_classes`.\n\n❌ نادرست / Wrong:\n\n```python\nclass OrderViewSet(ModelViewSet):\n    queryset = Order.objects.all()\n    serializer_class = OrderSerializer\n    # بدون permission!\n```\n\n✅ درست / Correct:\n\n```python\nclass OrderViewSet(ModelViewSet):\n    queryset = Order.objects.all()\n    serializer_class = OrderSerializer\n    permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]\n    throttle_classes = [UserRateThrottle]\n```\n\n---\n\n## 2. Serializer فقط validation؟ / Serializer for validation only?\n\nمنطق تجاری در Serializer نگذار؛ فقط validation و فراخوانی service.\n\n**English:** Don't put business logic in Serializer; only validation and service call.\n\n❌ نادرست / Wrong:\n\n```python\nclass OrderSerializer(serializers.ModelSerializer):\n    def create(self, validated_data):\n        charge_payment(validated_data[\"amount\"])\n        order = Order.objects.create(**validated_data)\n        send_notification(order)\n        return order\n```\n\n✅ درست / Correct:\n\n```python\nclass OrderSerializer(serializers.ModelSerializer):\n    def create(self, validated_data):\n        return CreateOrderService().execute(\n            user=self.context[\"request\"].user,\n            validated_data=validated_data,\n        )\n```\n\n---\n\n## 3. Business logic در service؟ / Business logic in service?\n\nمنطق تجاری در Service؛ View فقط orchestration.\n\n**English:** Business logic in Service; View only orchestrates.\n\n❌ نادرست / Wrong:\n\n```python\nclass OrderViewSet(ModelViewSet):\n    def create(self, request):\n        if request.user.profile.balance < 0:\n            raise ValidationError(\"No balance\")\n        order = Order.objects.create(user=request.user, **request.data)\n        return Response(OrderSerializer(order).data)\n```\n\n✅ درست / Correct:\n\n```python\nclass OrderViewSet(ModelViewSet):\n    def create(self, request):\n        serializer = self.get_serializer(data=request.data)\n        serializer.is_valid(raise_exception=True)\n        order = CreateOrderService().execute(\n            user=request.user,\n            validated_data=serializer.validated_data,\n        )\n        return Response(OrderSerializer(order).data, status=201)\n```\n\n---\n\n## 4. Migration امن است؟ / Migration safe?\n\nهمیشه migration بساز؛ دیتابیس را دستی تغییر نده. فیلدهای جدید با default یا nullable.\n\n**English:** Always create migrations; don't change DB manually. New fields with default or nullable.\n\n❌ نادرست / Wrong:\n\n```python\n# افزودن فیلد بدون default — migration شکست می‌خورد روی رکوردهای موجود\nclass Order(models.Model):\n    status = models.CharField(max_length=20)  # بدون default\n```\n\n✅ درست / Correct:\n\n```python\nclass OrderStatus(models.TextChoices):\n    PENDING = \"PENDING\", \"در انتظار\"\n\nclass Order(models.Model):\n    status = models.CharField(\n        max_length=20,\n        choices=OrderStatus.choices,\n        default=OrderStatus.PENDING,\n    )\n```\n\n---\n\n## 5. Test اضافه شده؟ / Tests added?\n\nAPI و منطق حیاتی باید تست داشته باشند.\n\n**English:** API and critical logic must have tests.\n\n❌ نادرست / Wrong:\n\n```python\n# هیچ test برای endpoint جدید\n# No tests for new endpoint\n```\n\n✅ درست / Correct:\n\n```python\nclass OrderAPITest(APITestCase):\n    def test_unauthorized_returns_401(self):\n        response = self.client.get(\"/api/v1/orders/\")\n        self.assertEqual(response.status_code, 401)\n\n    def test_authenticated_can_list_own_orders(self):\n        self.client.force_authenticate(user=self.user)\n        response = self.client.get(\"/api/v1/orders/\")\n        self.assertEqual(response.status_code, 200)\n```\n\n---\n\n## 6. N+1 برطرف شده؟ / N+1 fixed?\n\nبرای foreign key: `select_related`. برای many-to-many / reverse FK: `prefetch_related`.\n\n**English:** For FK: `select_related`. For M2M / reverse FK: `prefetch_related`.\n\n❌ نادرست / Wrong:\n\n```python\nfor order in Order.objects.all():\n    print(order.user.email)  # هر بار query جدید — N+1!\n```\n\n✅ درست / Correct:\n\n```python\nfor order in Order.objects.select_related(\"user\"):\n    print(order.user.email)  # یک query\n\n# برای many-to-many یا reverse FK\norders = Order.objects.prefetch_related(\"items\")\n```\n\n---\n\n## 7. Secrets در env؟ / Secrets in env?\n\nرمزها، API keys و tokens در کد نگذار؛ از environment variables استفاده کن.\n\n**English:** Don't put passwords, API keys, tokens in code; use environment variables.\n\n❌ نادرست / Wrong:\n\n```python\nSECRET_KEY = \"my-hardcoded-secret\"\nDB_PASSWORD = \"admin123\"\n```\n\n✅ درست / Correct:\n\n```python\nimport os\n\nSECRET_KEY = os.environ.get(\"SECRET_KEY\")\nDB_PASSWORD = os.environ.get(\"DB_PASSWORD\")\n```\n\n---\n\n## 8. Type hints برای توابع عمومی؟ / Type hints for public functions?\n\nتوابع عمومی باید type hints داشته باشند.\n\n**English:** Public functions must have type hints.\n\n❌ نادرست / Wrong:\n\n```python\ndef process_order(order):\n    return order.total * 1.09\n```\n\n✅ درست / Correct:\n\n```python\ndef process_order(order: Order) -> Decimal:\n    return order.total * Decimal(\"1.09\")\n```\n",
+        "raw": "---\ntitle: Quick Reference\nsummary: Quick Reference — AI Checklist برای backend Django\ndomain: backend\ncategory: core\napplies_to:\n  - \"backend/**/*.py\"\npriority: 50\nkind: reference\n---\n\n# Quick Reference (AI Checklist)\n\nچک‌لیست سریع قبل از ارائه کد. هر مورد را بررسی کن.\n\n**English:** Quick checklist before submitting code. Verify each item.\n\n---\n\n## 1. Permission دارد؟ / Permissions defined?\n\nViewSetها باید `permission_classes` و در صورت نیاز `throttle_classes` داشته باشند. جزئیات و مثال در\n`knowledge/backend/security/security.md`.\n\n---\n\n## 2. Serializer فقط validation؟ / Serializer for validation only?\n\nمنطق تجاری در Serializer نگذار؛ فقط validation و فراخوانی service. جزئیات و مثال در\n`knowledge/backend/architecture/django-architecture.md`.\n\n---\n\n## 3. Business logic در service؟ / Business logic in service?\n\nمنطق تجاری در Service؛ View فقط orchestration. جزئیات و مثال در\n`knowledge/backend/architecture/django-architecture.md`.\n\n---\n\n## 4. Migration امن است؟ / Migration safe?\n\nهمیشه migration بساز؛ دیتابیس را دستی تغییر نده. فیلدهای جدید با default یا nullable.\n\n**English:** Always create migrations; don't change DB manually. New fields with default or nullable.\n\n❌ نادرست / Wrong:\n\n```python\n# افزودن فیلد بدون default — migration شکست می‌خورد روی رکوردهای موجود\nclass Order(models.Model):\n    status = models.CharField(max_length=20)  # بدون default\n```\n\n✅ درست / Correct:\n\n```python\nclass OrderStatus(models.TextChoices):\n    PENDING = \"PENDING\", \"در انتظار\"\n\nclass Order(models.Model):\n    status = models.CharField(\n        max_length=20,\n        choices=OrderStatus.choices,\n        default=OrderStatus.PENDING,\n    )\n```\n\n---\n\n## 5. Test اضافه شده؟ / Tests added?\n\nAPI و منطق حیاتی باید تست داشته باشند.\n\n**English:** API and critical logic must have tests.\n\n❌ نادرست / Wrong:\n\n```python\n# هیچ test برای endpoint جدید\n# No tests for new endpoint\n```\n\n✅ درست / Correct:\n\n```python\nclass OrderAPITest(APITestCase):\n    def test_unauthorized_returns_401(self):\n        response = self.client.get(\"/api/v1/orders/\")\n        self.assertEqual(response.status_code, 401)\n\n    def test_authenticated_can_list_own_orders(self):\n        self.client.force_authenticate(user=self.user)\n        response = self.client.get(\"/api/v1/orders/\")\n        self.assertEqual(response.status_code, 200)\n```\n\n---\n\n## 6. N+1 برطرف شده؟ / N+1 fixed?\n\nبرای foreign key: `select_related`. برای many-to-many / reverse FK: `prefetch_related`. جزئیات و مثال در\n`knowledge/backend/performance/optimization.md`.\n\n---\n\n## 7. Secrets در env؟ / Secrets in env?\n\nرمزها، API keys و tokens در کد نگذار؛ از environment variables استفاده کن.\n\n**English:** Don't put passwords, API keys, tokens in code; use environment variables.\n\n❌ نادرست / Wrong:\n\n```python\nSECRET_KEY = \"my-hardcoded-secret\"\nDB_PASSWORD = \"admin123\"\n```\n\n✅ درست / Correct:\n\n```python\nimport os\n\nSECRET_KEY = os.environ.get(\"SECRET_KEY\")\nDB_PASSWORD = os.environ.get(\"DB_PASSWORD\")\n```\n\n---\n\n## 8. Type hints برای توابع عمومی؟ / Type hints for public functions?\n\nتوابع عمومی باید type hints داشته باشند.\n\n**English:** Public functions must have type hints.\n\n❌ نادرست / Wrong:\n\n```python\ndef process_order(order):\n    return order.total * 1.09\n```\n\n✅ درست / Correct:\n\n```python\ndef process_order(order: Order) -> Decimal:\n    return order.total * Decimal(\"1.09\")\n```\n",
         "summary": "Quick Reference",
         "key_points": [
           "- \"backend/**/*.py\"",
           "**English:** Quick checklist before submitting code. Verify each item.",
-          "**English:** ViewSets must have `permission_classes` and optionally `throttle_classes`.",
-          "❌ نادرست / Wrong:",
-          "✅ درست / Correct:",
-          "**English:** Don't put business logic in Serializer; only validation and service call.",
-          "❌ نادرست / Wrong:",
-          "✅ درست / Correct:",
-          "**English:** Business logic in Service; View only orchestrates.",
-          "❌ نادرست / Wrong:",
-          "✅ درست / Correct:",
           "**English:** Always create migrations; don't change DB manually. New fields with default or nullable.",
           "❌ نادرست / Wrong:",
           "✅ درست / Correct:",
           "**English:** API and critical logic must have tests.",
           "❌ نادرست / Wrong:",
           "✅ درست / Correct:",
-          "**English:** For FK: `select_related`. For M2M / reverse FK: `prefetch_related`.",
+          "**English:** Don't put passwords, API keys, tokens in code; use environment variables.",
+          "❌ نادرست / Wrong:",
+          "✅ درست / Correct:",
+          "**English:** Public functions must have type hints.",
           "❌ نادرست / Wrong:",
           "✅ درست / Correct:"
         ],
         "sections": [
           "# Quick Reference (AI Checklist)",
           "## 1. Permission دارد؟ / Permissions defined?",
-          "# بدون permission!",
           "## 2. Serializer فقط validation؟ / Serializer for validation only?",
           "## 3. Business logic در service؟ / Business logic in service?",
           "## 4. Migration امن است؟ / Migration safe?",
@@ -449,21 +435,18 @@
           "# هیچ test برای endpoint جدید",
           "# No tests for new endpoint",
           "## 6. N+1 برطرف شده؟ / N+1 fixed?",
-          "# برای many-to-many یا reverse FK",
           "## 7. Secrets در env؟ / Secrets in env?",
           "## 8. Type hints برای توابع عمومی؟ / Type hints for public functions?"
         ],
         "code_blocks": [
-          "class OrderViewSet(ModelViewSet):\n    queryset = Order.objects.all()\n    serializer_class = OrderSerializer\n    # بدون permission!",
-          "class OrderViewSet(ModelViewSet):\n    queryset = Order.objects.all()\n    serializer_class = OrderSerializer\n    permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]\n    throttle_classes = [UserRateThrottle]",
-          "class OrderSerializer(serializers.ModelSerializer):\n    def create(self, validated_data):\n        charge_payment(validated_data[\"amount\"])\n        order = Order.objects.create(**validated_data)\n        send_notification(order)\n        return order",
-          "class OrderSerializer(serializers.ModelSerializer):\n    def create(self, validated_data):\n        return CreateOrderService().execute(\n            user=self.context[\"request\"].user,\n            validated_data=validated_data,\n        )",
-          "class OrderViewSet(ModelViewSet):\n    def create(self, request):\n        if request.user.profile.balance < 0:\n            raise ValidationError(\"No balance\")\n        order = Order.objects.create(user=request.user, **request.data)\n        return Response(OrderSerializer(order).data)",
-          "class OrderViewSet(ModelViewSet):\n    def create(self, request):\n        serializer = self.get_serializer(data=request.data)\n        serializer.is_valid(raise_exception=True)\n        order = CreateOrderService().execute(\n            user=request.user,\n            validated_data=serializer.validated_data,\n        )\n        return Response(OrderSerializer(order).data, status=201)",
           "# افزودن فیلد بدون default — migration شکست می‌خورد روی رکوردهای موجود\nclass Order(models.Model):\n    status = models.CharField(max_length=20)  # بدون default",
           "class OrderStatus(models.TextChoices):\n    PENDING = \"PENDING\", \"در انتظار\"\n\nclass Order(models.Model):\n    status = models.CharField(\n        max_length=20,\n        choices=OrderStatus.choices,\n        default=OrderStatus.PENDING,\n    )",
           "# هیچ test برای endpoint جدید\n# No tests for new endpoint",
-          "class OrderAPITest(APITestCase):\n    def test_unauthorized_returns_401(self):\n        response = self.client.get(\"/api/v1/orders/\")\n        self.assertEqual(response.status_code, 401)\n\n    def test_authenticated_can_list_own_orders(self):\n        self.client.force_authenticate(user=self.user)\n        response = self.client.get(\"/api/v1/orders/\")\n        self.assertEqual(response.status_code, 200)"
+          "class OrderAPITest(APITestCase):\n    def test_unauthorized_returns_401(self):\n        response = self.client.get(\"/api/v1/orders/\")\n        self.assertEqual(response.status_code, 401)\n\n    def test_authenticated_can_list_own_orders(self):\n        self.client.force_authenticate(user=self.user)\n        response = self.client.get(\"/api/v1/orders/\")\n        self.assertEqual(response.status_code, 200)",
+          "SECRET_KEY = \"my-hardcoded-secret\"\nDB_PASSWORD = \"admin123\"",
+          "import os\n\nSECRET_KEY = os.environ.get(\"SECRET_KEY\")\nDB_PASSWORD = os.environ.get(\"DB_PASSWORD\")",
+          "def process_order(order):\n    return order.total * 1.09",
+          "def process_order(order: Order) -> Decimal:\n    return order.total * Decimal(\"1.09\")"
         ]
       },
       "activation": {
@@ -473,6 +456,7 @@
         "keywords": [
           "\"backend/**/*.py\"",
           "**english:**",
+          "`kno",
           "`permission_classes`",
           "`throttle_classes`",
           "applies_to:",
@@ -489,8 +473,7 @@
           "each",
           "item.",
           "kind:",
-          "permission",
-          "permissions"
+          "permission"
         ]
       },
       "priority": 50,
@@ -504,7 +487,7 @@
         "depends_on": [],
         "related": []
       },
-      "checksum": "9ef497db81bd2bfd43ed4ee46172fb2e1484e3141e193f11c0707fe826853ceb"
+      "checksum": "e39a1d1489d0717fa25744cf2f97a720f423b948792f2f5a6da109af0463efcc"
     },
     {
       "type": "knowledge_ir",
@@ -1219,7 +1202,7 @@
       "category": "architecture",
       "kind": "architecture",
       "content": {
-        "raw": "---\ntitle: Component Design\nsummary: Vue component design principles, props, emits, slots, and composition\ndomain: frontend\ncategory: architecture\napplies_to:\n  - \"frontend/src/**/*.vue\"\n  - \"frontend/src/**/*.js\"\npriority: 50\nkind: architecture\n---\n\n# Component Design Principles (Vue 3)\n\n## اصول طراحی کامپوننت\n\n### Single Responsibility Principle (SRP)\n\nهر کامپوننت فقط یک کار انجام دهد.\n\n**Code Smell:**\n- کامپوننت‌های بیش از 200 خط\n- کامپوننت‌هایی که هم state management و هم UI rendering دارند\n- نام‌های ترکیبی: `UserProfileFormWithValidation`\n\n**اصل:** تقسیم به کامپوننت‌های کوچک‌تر با مسئولیت واحد\n\n### Composition over Configuration\n\n- از composition برای ترکیب قابلیت‌ها استفاده کن\n- از slots برای محتوای پویا استفاده کن\n- از props برای configuration استفاده کن\n\n### Props Design\n\n- از `defineProps` با type یا validator استفاده کن\n- از default values مناسب استفاده کن\n- در .js از JSDoc برای type hint استفاده کن\n- Props مستند شده\n\n✅ **Good (script setup):**\n```vue\n<script setup>\nconst props = defineProps({\n  variant: { type: String, default: 'primary' },\n  disabled: { type: Boolean, default: false }\n});\n</script>\n```\n\n### Emits Design\n\n- از `defineEmits` برای custom events استفاده کن\n- از event names واضح (kebab-case در template) استفاده کن\n- از payload structure ثابت استفاده کن\n\n✅ **Good:**\n```vue\n<script setup>\nconst emit = defineEmits(['submit', 'cancel']);\nemit('submit', { id: 1, name: 'Ali' });\n</script>\n```\n\n### Slots Pattern\n\n- Default slot برای محتوای اصلی\n- Named slots برای بخش‌های خاص\n- Slot fallback با محتوای پیش‌فرض\n\n## Props Down, Events Up\n\nداده از parent به child با props؛ communication از child به parent با emit.\n\n**قانون:**\n- State در parent (یا Pinia) نگه دار\n- Child فقط props می‌گیرد و emit می‌کند\n- از direct mutation از بیرون در child پرهیز کن\n\n## Reusability\n\n- کامپوننت‌ها باید قابل استفاده مجدد باشند\n- از props برای customization استفاده کن\n- از slots برای flexibility استفاده کن\n- هر کامپوننت باید بدون وابستگی به parent/context خاص کار کند\n\n## Documentation\n\n- از JSDoc برای props در composables/services استفاده کن\n- از comments برای منطق پیچیده استفاده کن\n- File header در صورت نیاز (توضیح فارسی)\n- Emits مستند شده\n\n## Atomic Design در frontend\n\n**ساختار:**\n```\ncomponents/\n├── ui/           # atoms & molecules\n│   ├── Button.vue\n│   ├── Input.vue\n│   ├── Card.vue\n│   └── Modal.vue\n├── features/     # feature-specific\n├── layout/       # MainLayout, Sidebar, Header\n```\n\n**قانون:** کامپوننت‌های کوچک را بساز و با composition ترکیب کن\n",
+        "raw": "---\ntitle: Component Design\nsummary: Vue component design principles, props, emits, slots, and composition\ndomain: frontend\ncategory: architecture\napplies_to:\n  - \"frontend/src/**/*.vue\"\n  - \"frontend/src/**/*.js\"\npriority: 50\nkind: architecture\n---\n\n# Component Design Principles (Vue 3)\n\n## اصول طراحی کامپوننت\n\n### Single Responsibility Principle (SRP)\n\nهر کامپوننت فقط یک کار انجام دهد.\n\n**Code Smell:**\n- کامپوننت‌های بیش از 200 خط\n- کامپوننت‌هایی که هم state management و هم UI rendering دارند\n- نام‌های ترکیبی: `UserProfileFormWithValidation`\n\n**اصل:** تقسیم به کامپوننت‌های کوچک‌تر با مسئولیت واحد\n\n### Composition over Configuration\n\n- از composition برای ترکیب قابلیت‌ها استفاده کن\n- از slots برای محتوای پویا استفاده کن\n- از props برای configuration استفاده کن\n\n### Props Design\n\nجزئیات `defineProps`، types، defaults و validation در\n`knowledge/frontend/patterns/props-events.md`.\n\n### Emits Design\n\nجزئیات `defineEmits`، naming و payload در\n`knowledge/frontend/patterns/props-events.md`.\n\n### Slots Pattern\n\n- Default slot برای محتوای اصلی\n- Named slots برای بخش‌های خاص\n- Slot fallback با محتوای پیش‌فرض\n\n## Props Down, Events Up\n\nداده از parent به child با props؛ communication از child به parent با emit.\n\n**قانون:**\n- State در parent (یا Pinia) نگه دار\n- Child فقط props می‌گیرد و emit می‌کند\n- از direct mutation از بیرون در child پرهیز کن\n\n## Reusability\n\n- کامپوننت‌ها باید قابل استفاده مجدد باشند\n- از props برای customization استفاده کن\n- از slots برای flexibility استفاده کن\n- هر کامپوننت باید بدون وابستگی به parent/context خاص کار کند\n\n## Documentation\n\n- از JSDoc برای props در composables/services استفاده کن\n- از comments برای منطق پیچیده استفاده کن\n- File header در صورت نیاز (توضیح فارسی)\n- Emits مستند شده\n\n## Atomic Design در frontend\n\nسلسله‌مراتب atoms/molecules/organisms در\n`knowledge/frontend/architecture/atomic-design.md`.\nساختار پوشه `components/` در\n`knowledge/frontend/architecture/project-structure.md`.\n",
         "summary": "Component Design",
         "key_points": [
           "- \"frontend/src/**/*.vue\"",
@@ -1232,16 +1215,16 @@
           "- از composition برای ترکیب قابلیت‌ها استفاده کن",
           "- از slots برای محتوای پویا استفاده کن",
           "- از props برای configuration استفاده کن",
-          "- از `defineProps` با type یا validator استفاده کن",
-          "- از default values مناسب استفاده کن",
-          "- در .js از JSDoc برای type hint استفاده کن",
-          "- Props مستند شده",
-          "✅ **Good (script setup):**",
-          "- از `defineEmits` برای custom events استفاده کن",
-          "- از event names واضح (kebab-case در template) استفاده کن",
-          "- از payload structure ثابت استفاده کن",
-          "✅ **Good:**",
-          "- Default slot برای محتوای اصلی"
+          "- Default slot برای محتوای اصلی",
+          "- Named slots برای بخش‌های خاص",
+          "- Slot fallback با محتوای پیش‌فرض",
+          "**قانون:**",
+          "- State در parent (یا Pinia) نگه دار",
+          "- Child فقط props می‌گیرد و emit می‌کند",
+          "- از direct mutation از بیرون در child پرهیز کن",
+          "- کامپوننت‌ها باید قابل استفاده مجدد باشند",
+          "- از props برای customization استفاده کن",
+          "- از slots برای flexibility استفاده کن"
         ],
         "sections": [
           "# Component Design Principles (Vue 3)",
@@ -1256,10 +1239,7 @@
           "## Documentation",
           "## Atomic Design در frontend"
         ],
-        "code_blocks": [
-          "\n### Emits Design\n\n- از `defineEmits` برای custom events استفاده کن\n- از event names واضح (kebab-case در template) استفاده کن\n- از payload structure ثابت استفاده کن\n\n✅ **Good:**",
-          "\n### Slots Pattern\n\n- Default slot برای محتوای اصلی\n- Named slots برای بخش‌های خاص\n- Slot fallback با محتوای پیش‌فرض\n\n## Props Down, Events Up\n\nداده از parent به child با props؛ communication از child به parent با emit.\n\n**قانون:**\n- State در parent (یا Pinia) نگه دار\n- Child فقط props می‌گیرد و emit می‌کند\n- از direct mutation از بیرون در child پرهیز کن\n\n## Reusability\n\n- کامپوننت‌ها باید قابل استفاده مجدد باشند\n- از props برای customization استفاده کن\n- از slots برای flexibility استفاده کن\n- هر کامپوننت باید بدون وابستگی به parent/context خاص کار کند\n\n## Documentation\n\n- از JSDoc برای props در composables/services استفاده کن\n- از comments برای منطق پیچیده استفاده کن\n- File header در صورت نیاز (توضیح فارسی)\n- Emits مستند شده\n\n## Atomic Design در frontend\n\n**ساختار:**"
-        ]
+        "code_blocks": []
       },
       "activation": {
         "file_patterns": [
@@ -1301,7 +1281,7 @@
         "depends_on": [],
         "related": []
       },
-      "checksum": "e1728d279a93b8ceedc1440b96c379ced4014aa52991c0782d1bc1bf390cfc08"
+      "checksum": "f95e992f3dbdc8d6eff407e98ddb687ccf447a6fc47dda08a415f11fd2de2b92"
     },
     {
       "type": "knowledge_ir",
@@ -1562,7 +1542,7 @@
       "category": "core",
       "kind": "rule",
       "content": {
-        "raw": "---\ntitle: Ai Behavior\nsummary: AI behavior guidelines and priorities for frontend development\ndomain: frontend\ncategory: core\napplies_to:\n  - \"frontend/src/**/*.vue\"\n  - \"frontend/src/**/*.js\"\n  - \"frontend/src/**/*.css\"\npriority: 50\nkind: rule\n---\n\n# AI Behavior Guidelines\n\n## اولویت‌های اجرایی (به ترتیب اهمیت)\n\n1. **UI/UX First** - تجربه کاربر در اولویت\n   - کد باید تجربه کاربری روان و بصری جذاب ایجاد کند\n   - هر کامپوننت باید responsive و accessible باشد\n   - رابط کاربری باید intuitive و self-explanatory باشد\n   - از اصول طراحی بصری پیروی کن (visual hierarchy, contrast, spacing)\n   - همیشه از دید کاربر نهایی به طراحی نگاه کن\n   - تاخیر در واکنش‌ها را به حداقل برسان\n\n2. **Accessibility First** - دسترسی‌پذیری در اولویت\n   - WCAG 2.1 AA compliance الزامی است\n   - همیشه از semantic HTML استفاده کن\n   - keyboard navigation و screen reader support اجباری\n   - Color contrast minimums را رعایت کن (4.5:1 for text)\n   - دسترس‌پذیری یک ویژگی اضافی نیست، یک الزام است\n\n3. **Mobile-First** - موبایل در اولویت\n   - طراحی از موبایل شروع شود و به دسکتاپ گسترش یابد\n   - Touch targets حداقل 44×44px\n   - از viewport units و relative units استفاده کن (نه px ثابت)\n   - برای موبایل طراحی کن، سپس برای صفحات بزرگتر\n\n4. **Performance First** - عملکرد در اولویت\n   - Bundle size: هر route حداکثر 170KB (gzipped)\n   - First Contentful Paint: <1.8s\n   - Time to Interactive: <3.8s\n   - از lazy loading و code splitting استفاده کن\n   - برنامه باید سریع بارگذاری شود و روان اجرا شود\n   - بهینه‌سازی‌ها را بر اساس داده‌های واقعی انجام ده، نه حدس و گمان\n   - محدودیت‌های دستگاه‌های ضعیف‌تر را در نظر بگیر\n\n5. **Maintainability** - قابلیت نگهداری\n   - کدی بنویس که همکار بعدی بتواند به راحتی آن را درک و تغییر دهد\n   - از ساختارهای پیچیده و \"هوشمندانه\" بدون دلیل مشخص پرهیز کن\n   - کامپوننت‌ها باید قابل استفاده مجدد و مستقل باشند\n\n## قوانین خاص تولید کد Frontend توسط AI\n\n- **همیشه Responsive بساز:** هر کامپوننت باید در تمام breakpoints تست شود\n- **Component Reusability:** کامپوننت‌ها باید قابل استفاده مجدد و isolated باشند\n- **Props با Type Safety:** همه props باید type-safe باشند (JSDoc یا TypeScript)\n- **همیشه قبل از معرفی یک الگوی پیچیده، توضیح بده** چرا این الگو لازم است\n- **تجربه کاربری را فدای کد \"تمیز\" نکن** - گاهی یک راه‌حل ساده‌تر برای کاربر بهتر است حتی اگر کد کمی پیچیده‌تر شود\n- **در صورت شک، از کاربر بپرس:** برای طراحی UI پیچیده، mockup یا توضیح بیشتر بخواه\n- **همیشه به دسترس‌پذیری (Accessibility) توجه کن** - این یک ویژگی اضافی نیست، یک الزام است\n- **تغییرات تدریجی را به تغییرات بزرگ ترجیح بده** (Incremental Refactoring)\n\n## Performance Budget (بودجه عملکرد)\n\n**الزامات سخت:**\n- Initial JS bundle: **<170KB** (gzipped)\n- Initial CSS: **<50KB** (gzipped)\n- Total page weight: **<1MB**\n- Images: WebP format, lazy-loaded\n- Fonts: <100KB, with font-display: swap\n\n**Core Web Vitals:**\n- **LCP (Largest Contentful Paint):** <2.5s\n- **FID (First Input Delay):** <100ms\n- **CLS (Cumulative Layout Shift):** <0.1\n\n## قوانین تصمیم‌گیری برای AI\n\n1. **اولویت تجربه کاربری:** همیشه تجربه کاربری را بر کد \"تمیز\" ترجیح ده\n2. **دسترس‌پذیری اولیه:** دسترس‌پذیری یک ویژگی اضافی نیست، یک الزام است\n3. **عملکرد مهم است:** بهینه‌سازی‌ها را بر اساس داده‌های واقعی انجام ده، نه حدس و گمان\n4. **سادگی بر پیچیدگی:** راه‌حل ساده را به راه‌حل پیچیده ترجیح ده، مگر اینکه دلیل محکمی برای پیچیدگی وجود داشته باشد\n5. **توسعه تدریجی:** تغییرات بزرگ را به بخش‌های کوچکتر تقسیم کنید\n6. **ثبات در طراحی:** از design tokens و اصول طراحی ثابت استفاده کنید\n7. **واکنش‌گرایی اول:** برای موبایل طراحی کنید، سپس برای صفحات بزرگتر\n\n## الگوهای ترجیحی برای AI\n\n1. **Component-First Development:** همیشه از کامپوننت‌های قابل استفاده مجدد استفاده کنید\n2. **Atomic Design:** از اصول Atomic Design برای ساختار UI استفاده کنید\n3. **State Management:** از Pinia برای state سراسری استفاده کنید\n4. **Error Handling:** از proper error handling و loading states استفاده کنید\n5. **Responsive Design:** از رویکرد mobile-first برای طراحی واکنش‌گرا استفاده کنید\n6. **Accessibility:** از proper ARIA attributes و semantic HTML استفاده کنید\n7. **Performance:** از lazy loading و code splitting برای بهینه‌سازی عملکرد استفاده کنید\n\n## User Experience Over Developer Experience\n\nوقتی تجربه کاربر و راحتی توسعه‌دهنده در تضاد هستند، تجربه کاربر برنده است.\n\nمثال:\n- Bundle size optimization (حتی اگر کد پیچیده‌تر شود)\n- Manual performance optimization (حتی اگر زمان بیشتری بگیرد)\n- Accessibility compliance (حتی اگر markup بیشتری لازم باشد)\n",
+        "raw": "---\ntitle: Ai Behavior\nsummary: AI behavior guidelines and priorities for frontend development\ndomain: frontend\ncategory: core\napplies_to:\n  - \"frontend/src/**/*.vue\"\n  - \"frontend/src/**/*.js\"\n  - \"frontend/src/**/*.css\"\npriority: 50\nkind: rule\n---\n\n# AI Behavior Guidelines\n\n## اولویت‌های اجرایی (به ترتیب اهمیت)\n\n1. **UI/UX First** - تجربه کاربر در اولویت\n   - کد باید تجربه کاربری روان و بصری جذاب ایجاد کند\n   - هر کامپوننت باید responsive و accessible باشد\n   - رابط کاربری باید intuitive و self-explanatory باشد\n   - از اصول طراحی بصری پیروی کن (visual hierarchy, contrast, spacing)\n   - همیشه از دید کاربر نهایی به طراحی نگاه کن\n   - تاخیر در واکنش‌ها را به حداقل برسان\n\n2. **Accessibility First** - دسترسی‌پذیری در اولویت\n   - دسترس‌پذیری یک ویژگی اضافی نیست، یک الزام است.\n   - جزئیات WCAG 2.1 AA در `knowledge/frontend/ui-ux/accessibility.md`.\n\n3. **Mobile-First** - موبایل در اولویت\n   - طراحی از موبایل شروع شود و به دسکتاپ گسترش یابد.\n   - جزئیات در `knowledge/frontend/ui-ux/responsive-design.md` و\n     `knowledge/frontend/core/meta-principles.md`.\n\n4. **Performance First** - عملکرد در اولویت\n   - بهینه‌سازی‌ها را بر اساس داده‌های واقعی انجام ده، نه حدس و گمان.\n   - محدودیت‌های دستگاه‌های ضعیف‌تر را در نظر بگیر.\n   - بودجه bundle در `knowledge/frontend/performance/bundle-size.md`.\n   - متریک‌های Core Web Vitals در `knowledge/frontend/performance/core-web-vitals.md`.\n\n5. **Maintainability** - قابلیت نگهداری\n   - کدی بنویس که همکار بعدی بتواند به راحتی آن را درک و تغییر دهد\n   - از ساختارهای پیچیده و \"هوشمندانه\" بدون دلیل مشخص پرهیز کن\n   - کامپوننت‌ها باید قابل استفاده مجدد و مستقل باشند\n\n## قوانین خاص تولید کد Frontend توسط AI\n\n- **همیشه Responsive بساز:** هر کامپوننت باید در تمام breakpoints تست شود\n- **Component Reusability:** کامپوننت‌ها باید قابل استفاده مجدد و isolated باشند\n- **Props با Type Safety:** همه props باید type-safe باشند (JSDoc یا TypeScript)\n- **همیشه قبل از معرفی یک الگوی پیچیده، توضیح بده** چرا این الگو لازم است\n- **تجربه کاربری را فدای کد \"تمیز\" نکن** - گاهی یک راه‌حل ساده‌تر برای کاربر بهتر است حتی اگر کد کمی پیچیده‌تر شود\n- **در صورت شک، از کاربر بپرس:** برای طراحی UI پیچیده، mockup یا توضیح بیشتر بخواه\n- **همیشه به دسترس‌پذیری (Accessibility) توجه کن** - این یک ویژگی اضافی نیست، یک الزام است\n- **تغییرات تدریجی را به تغییرات بزرگ ترجیح بده** (Incremental Refactoring)\n\n## Performance Budget\n\nاعداد بودجه و Core Web Vitals را اینجا تکرار نکن:\n- Bundle: `knowledge/frontend/performance/bundle-size.md`\n- Vitals: `knowledge/frontend/performance/core-web-vitals.md`\n\n## قوانین تصمیم‌گیری برای AI\n\n1. **اولویت تجربه کاربری:** همیشه تجربه کاربری را بر کد \"تمیز\" ترجیح ده\n2. **دسترس‌پذیری اولیه:** دسترس‌پذیری یک ویژگی اضافی نیست، یک الزام است\n3. **عملکرد مهم است:** بهینه‌سازی‌ها را بر اساس داده‌های واقعی انجام ده، نه حدس و گمان\n4. **سادگی بر پیچیدگی:** راه‌حل ساده را به راه‌حل پیچیده ترجیح ده، مگر اینکه دلیل محکمی برای پیچیدگی وجود داشته باشد\n5. **توسعه تدریجی:** تغییرات بزرگ را به بخش‌های کوچکتر تقسیم کنید\n6. **ثبات در طراحی:** از design tokens و اصول طراحی ثابت استفاده کنید\n7. **واکنش‌گرایی اول:** برای موبایل طراحی کنید، سپس برای صفحات بزرگتر\n\n## الگوهای ترجیحی برای AI\n\n1. **Component-First Development:** همیشه از کامپوننت‌های قابل استفاده مجدد استفاده کنید\n2. **Atomic Design:** از اصول Atomic Design برای ساختار UI استفاده کنید\n3. **State Management:** از Pinia برای state سراسری استفاده کنید\n4. **Error Handling:** از proper error handling و loading states استفاده کنید\n5. **Responsive Design:** از رویکرد mobile-first برای طراحی واکنش‌گرا استفاده کنید\n6. **Accessibility:** از proper ARIA attributes و semantic HTML استفاده کنید\n7. **Performance:** از lazy loading و code splitting برای بهینه‌سازی عملکرد استفاده کنید\n\n## User Experience Over Developer Experience\n\nوقتی تجربه کاربر و راحتی توسعه‌دهنده در تضاد هستند، تجربه کاربر برنده است.\n\nمثال:\n- Bundle size optimization (حتی اگر کد پیچیده‌تر شود)\n- Manual performance optimization (حتی اگر زمان بیشتری بگیرد)\n- Accessibility compliance (حتی اگر markup بیشتری لازم باشد)\n",
         "summary": "Ai Behavior",
         "key_points": [
           "- \"frontend/src/**/*.vue\"",
@@ -1574,23 +1554,23 @@
           "- از اصول طراحی بصری پیروی کن (visual hierarchy, contrast, spacing)",
           "- همیشه از دید کاربر نهایی به طراحی نگاه کن",
           "- تاخیر در واکنش‌ها را به حداقل برسان",
-          "- WCAG 2.1 AA compliance الزامی است",
-          "- همیشه از semantic HTML استفاده کن",
-          "- keyboard navigation و screen reader support اجباری",
-          "- Color contrast minimums را رعایت کن (4.5:1 for text)",
-          "- دسترس‌پذیری یک ویژگی اضافی نیست، یک الزام است",
-          "- طراحی از موبایل شروع شود و به دسکتاپ گسترش یابد",
-          "- Touch targets حداقل 44×44px",
-          "- از viewport units و relative units استفاده کن (نه px ثابت)",
-          "- برای موبایل طراحی کن، سپس برای صفحات بزرگتر",
-          "- Bundle size: هر route حداکثر 170KB (gzipped)",
-          "- First Contentful Paint: <1.8s"
+          "- دسترس‌پذیری یک ویژگی اضافی نیست، یک الزام است.",
+          "- جزئیات WCAG 2.1 AA در `knowledge/frontend/ui-ux/accessibility.md`.",
+          "- طراحی از موبایل شروع شود و به دسکتاپ گسترش یابد.",
+          "- جزئیات در `knowledge/frontend/ui-ux/responsive-design.md` و",
+          "- بهینه‌سازی‌ها را بر اساس داده‌های واقعی انجام ده، نه حدس و گمان.",
+          "- محدودیت‌های دستگاه‌های ضعیف‌تر را در نظر بگیر.",
+          "- بودجه bundle در `knowledge/frontend/performance/bundle-size.md`.",
+          "- متریک‌های Core Web Vitals در `knowledge/frontend/performance/core-web-vitals.md`.",
+          "- کدی بنویس که همکار بعدی بتواند به راحتی آن را درک و تغییر دهد",
+          "- از ساختارهای پیچیده و \"هوشمندانه\" بدون دلیل مشخص پرهیز کن",
+          "- کامپوننت‌ها باید قابل استفاده مجدد و مستقل باشند"
         ],
         "sections": [
           "# AI Behavior Guidelines",
           "## اولویت‌های اجرایی (به ترتیب اهمیت)",
           "## قوانین خاص تولید کد Frontend توسط AI",
-          "## Performance Budget (بودجه عملکرد)",
+          "## Performance Budget",
           "## قوانین تصمیم‌گیری برای AI",
           "## الگوهای ترجیحی برای AI",
           "## User Experience Over Developer Experience"
@@ -1639,7 +1619,7 @@
         "depends_on": [],
         "related": []
       },
-      "checksum": "90a4a1e7fa5f58390232cb0d1dc93578ae8380f097c57ceda8907106e392f270"
+      "checksum": "d9b56774b722efeb981db6e1ccd08bd637c80b8e0969faba2d3b8362c630cc56"
     },
     {
       "type": "knowledge_ir",
@@ -1739,7 +1719,7 @@
       "category": "core",
       "kind": "principle",
       "content": {
-        "raw": "---\ntitle: Meta Principles\nsummary: Meta-principles and fundamental design principles underlying all frontend development rules\ndomain: frontend\ncategory: core\napplies_to:\n  - \"frontend/src/**/*.vue\"\n  - \"frontend/src/**/*.js\"\n  - \"frontend/src/**/*.css\"\npriority: 50\nkind: principle\n---\n\n# Meta-Principles\n\nاصول پایه frontend. اصول جهان‌شمول در فایل اشتراکی تعریف شده‌اند:\n`knowledge/shared/engineering-principles.md`\n\nاگر اختلافی وجود داشت، rule تخصصی frontend در این فایل اولویت دارد.\n\n## Frontend-Specific Principles\n\n### Single Source of Truth در UI\n- برای تصمیم‌های طراحی از design tokens و CSS variables استفاده کن.\n- منبع مقادیر design باید مرکزی و قابل ردیابی باشد.\n\n### Component Reusability\n- کامپوننت‌ها isolated و self-contained باشند.\n- از props/slots برای customization استفاده کن.\n- وابستگی مستقیم به context خاص parent ایجاد نکن.\n\n### Progressive Enhancement\n- HTML/CSS پایه باید بدون JavaScript نیز قابل استفاده باشد.\n- فرم‌ها باید با HTML5 validation کار کنند.\n\n### Mobile-First Design\n- base styles بدون media query (موبایل) باشند.\n- media queryها فقط `min-width` باشند.\n- touch targets حداقل `44x44px` رعایت شوند.\n\n### Accessibility First\n- semantic HTML همیشه اولویت دارد.\n- ARIA فقط وقتی semantic کافی نیست استفاده شود.\n- همه عناصر تعاملی باید keyboard-accessible باشند.\n\n### Performance First (Frontend)\n- lazy loading برای محتوای off-screen.\n- code splitting برای routeها.\n- بهینه‌سازی image/font پیش‌فرض باشد.\n",
+        "raw": "---\ntitle: Meta Principles\nsummary: Meta-principles and fundamental design principles underlying all frontend development rules\ndomain: frontend\ncategory: core\napplies_to:\n  - \"frontend/src/**/*.vue\"\n  - \"frontend/src/**/*.js\"\n  - \"frontend/src/**/*.css\"\npriority: 50\nkind: principle\n---\n\n# Meta-Principles\n\nاصول پایه frontend. اصول جهان‌شمول در فایل اشتراکی تعریف شده‌اند:\n`knowledge/shared/engineering-principles.md`\n\nاگر اختلافی وجود داشت، rule تخصصی frontend در این فایل اولویت دارد.\n\n## Frontend-Specific Principles\n\n### Single Source of Truth در UI\n- برای تصمیم‌های طراحی از design tokens و CSS variables استفاده کن.\n- منبع مقادیر design باید مرکزی و قابل ردیابی باشد.\n\n### Component Reusability\n- کامپوننت‌ها isolated و self-contained باشند.\n- از props/slots برای customization استفاده کن.\n- وابستگی مستقیم به context خاص parent ایجاد نکن.\n\n### Progressive Enhancement\n- HTML/CSS پایه باید بدون JavaScript نیز قابل استفاده باشد.\n- فرم‌ها باید با HTML5 validation کار کنند.\n\n### Mobile-First Design\nجزئیات breakpoints، touch targets و CSS units در\n`knowledge/frontend/ui-ux/responsive-design.md`.\n\n### Accessibility First\n- semantic HTML همیشه اولویت دارد.\n- ARIA فقط وقتی semantic کافی نیست استفاده شود.\n- همه عناصر تعاملی باید keyboard-accessible باشند.\nجزئیات WCAG در `knowledge/frontend/ui-ux/accessibility.md`.\n\n### Performance First (Frontend)\nبودجه bundle در `knowledge/frontend/performance/bundle-size.md`.\nمتریک‌های LCP/FID/CLS در `knowledge/frontend/performance/core-web-vitals.md`.\n",
         "summary": "Meta Principles",
         "key_points": [
           "- \"frontend/src/**/*.vue\"",
@@ -1752,15 +1732,9 @@
           "- وابستگی مستقیم به context خاص parent ایجاد نکن.",
           "- HTML/CSS پایه باید بدون JavaScript نیز قابل استفاده باشد.",
           "- فرم‌ها باید با HTML5 validation کار کنند.",
-          "- base styles بدون media query (موبایل) باشند.",
-          "- media queryها فقط `min-width` باشند.",
-          "- touch targets حداقل `44x44px` رعایت شوند.",
           "- semantic HTML همیشه اولویت دارد.",
           "- ARIA فقط وقتی semantic کافی نیست استفاده شود.",
-          "- همه عناصر تعاملی باید keyboard-accessible باشند.",
-          "- lazy loading برای محتوای off-screen.",
-          "- code splitting برای routeها.",
-          "- بهینه‌سازی image/font پیش‌فرض باشد."
+          "- همه عناصر تعاملی باید keyboard-accessible باشند."
         ],
         "sections": [
           "# Meta-Principles",
@@ -1816,7 +1790,7 @@
         "depends_on": [],
         "related": []
       },
-      "checksum": "cba31f9fa49625952effebc3dba2a318495192328431b4ae9394448f649b99ba"
+      "checksum": "6ca139a5b1451ef22bf48bebe935c8ba61060d1558d056600f1811e576e66e65"
     },
     {
       "type": "knowledge_ir",
@@ -1826,16 +1800,13 @@
       "category": "patterns",
       "kind": "reference",
       "content": {
-        "raw": "---\ntitle: Anti Patterns\nsummary: Common anti-patterns in frontend development and their correct solutions\ndomain: frontend\ncategory: patterns\napplies_to:\n  - \"frontend/src/**/*.vue\"\n  - \"frontend/src/**/*.js\"\npriority: 50\nkind: reference\n---\n\n# Anti-Patterns\n\nقاعده‌های عمومی anti-pattern در\n`knowledge/shared/code-quality-baseline.md`\nتعریف شده‌اند. این فایل فقط anti-patternهای اختصاصی frontend را پوشش می‌دهد.\n\n## Prop Drilling\n\n❌ **Bad:** Prop drilling عمیق (>3 سطح)\n- Props را از parent به child به grandchild می‌فرستی\n\n✅ **Good:** استفاده از Pinia store\n- Shared state در store نگه دار\n- مستقیماً در کامپوننت‌ها با store استفاده کن\n\n## Massive Components\n\n❌ **Bad:** کامپوننت 500+ خطی\n- همه چیز در یک فایل\n\n✅ **Good:** تقسیم به کامپوننت‌های کوچک\n- Single Responsibility Principle\n- Composable components\n\n## Inline Styles Everywhere\n\n❌ **Bad:** استفاده زیاد از inline styles\n- Hard to maintain\n- No reusability\n\n✅ **Good:** Scoped styles\n- `<style scoped>` یا CSS classes\n- CSS Custom Properties\n\n## No Loading States\n\n❌ **Bad:** بدون loading indicator\n- کاربر منتظر می‌ماند بدون feedback\n\n✅ **Good:** Loading states\n- Spinner یا skeleton screen\n- Clear feedback\n\n## Global State Abuse\n\n❌ **Bad:** همه چیز در Pinia store\n- UI states که فقط local باید باشند\n\n✅ **Good:** Local state برای UI\n- Pinia فقط برای shared data\n- ref/reactive در component برای UI-specific state\n",
+        "raw": "---\ntitle: Anti Patterns\nsummary: Common anti-patterns in frontend development and their correct solutions\ndomain: frontend\ncategory: patterns\napplies_to:\n  - \"frontend/src/**/*.vue\"\n  - \"frontend/src/**/*.js\"\npriority: 50\nkind: reference\n---\n\n# Anti-Patterns\n\nقاعده‌های عمومی anti-pattern در\n`knowledge/shared/code-quality-baseline.md`\nتعریف شده‌اند. این فایل فقط anti-patternهای اختصاصی frontend را پوشش می‌دهد.\n\n## Prop Drilling\n\n❌ **Bad:** Prop drilling عمیق (>3 سطح)\n\n✅ **Good:** shared state را در Pinia نگه دار. قانون تصمیم local vs global در\n`knowledge/frontend/state/local-vs-global.md`.\n\n## Massive Components\n\n❌ **Bad:** کامپوننت 500+ خطی\n- همه چیز در یک فایل\n\n✅ **Good:** تقسیم به کامپوننت‌های کوچک\n- Single Responsibility Principle\n- Composable components\n\n## Inline Styles Everywhere\n\n❌ **Bad:** استفاده زیاد از inline styles\n- Hard to maintain\n- No reusability\n\n✅ **Good:** Scoped styles\n- `<style scoped>` یا CSS classes\n- CSS Custom Properties\n\n## No Loading States\n\n❌ **Bad:** بدون loading indicator\n\n✅ **Good:** Spinner، skeleton یا toast. الگوها در\n`knowledge/frontend/ui-ux/user-feedback.md`.\n\n## Global State Abuse\n\n❌ **Bad:** همه چیز در Pinia store (از جمله UI state محلی)\n\n✅ **Good:** local state برای UI؛ Pinia فقط برای دادهٔ مشترک. قانون تصمیم در\n`knowledge/frontend/state/local-vs-global.md`.\n",
         "summary": "Anti Patterns",
         "key_points": [
           "- \"frontend/src/**/*.vue\"",
           "- \"frontend/src/**/*.js\"",
           "❌ **Bad:** Prop drilling عمیق (>3 سطح)",
-          "- Props را از parent به child به grandchild می‌فرستی",
-          "✅ **Good:** استفاده از Pinia store",
-          "- Shared state در store نگه دار",
-          "- مستقیماً در کامپوننت‌ها با store استفاده کن",
+          "✅ **Good:** shared state را در Pinia نگه دار. قانون تصمیم local vs global در",
           "❌ **Bad:** کامپوننت 500+ خطی",
           "- همه چیز در یک فایل",
           "✅ **Good:** تقسیم به کامپوننت‌های کوچک",
@@ -1848,7 +1819,9 @@
           "- `<style scoped>` یا CSS classes",
           "- CSS Custom Properties",
           "❌ **Bad:** بدون loading indicator",
-          "- کاربر منتظر می‌ماند بدون feedback"
+          "✅ **Good:** Spinner، skeleton یا toast. الگوها در",
+          "❌ **Bad:** همه چیز در Pinia store (از جمله UI state محلی)",
+          "✅ **Good:** local state برای UI؛ Pinia فقط برای دادهٔ مشترک. قانون تصمیم در"
         ],
         "sections": [
           "# Anti-Patterns",
@@ -1869,6 +1842,7 @@
           "\"frontend/src/**/*.js\"",
           "\"frontend/src/**/*.vue\"",
           "**bad:**",
+          "**good:**",
           "`knowledge/shared/code-quality-baseline.md`",
           "anti",
           "anti-pattern",
@@ -1876,7 +1850,6 @@
           "anti-patternهای",
           "applies_to:",
           "category:",
-          "chil",
           "common",
           "correct",
           "development",
@@ -1884,8 +1857,8 @@
           "drilling",
           "frontend",
           "kind:",
-          "parent",
-          "patterns"
+          "patterns",
+          "priority:"
         ]
       },
       "priority": 50,
@@ -1900,7 +1873,7 @@
         "depends_on": [],
         "related": []
       },
-      "checksum": "d5e57febec767f36a2aa010b23b28ef2134e652688ce615d3f77f54e5576b924"
+      "checksum": "0a3fc3190f4682ae65ea8cc066633c2ddf82c4296baa571cccdeef0907cc1f9b"
     },
     {
       "type": "knowledge_ir",
@@ -1910,7 +1883,7 @@
       "category": "patterns",
       "kind": "skill",
       "content": {
-        "raw": "---\ntitle: Api Integration\nsummary: Best practices for API integration, error handling, loading states, caching, and form validation\ndomain: frontend\ncategory: patterns\napplies_to:\n  - \"frontend/src/**/*.vue\"\n  - \"frontend/src/**/*.js\"\npriority: 50\nkind: skill\n---\n\n# API Integration Rules\n\n## بهترین شیوه‌ها برای ارتباط با backend\n\n### Service Layer\n- از service layer برای API calls استفاده کن (مثلاً `src/services/`)\n- از separation of concerns استفاده کن\n- از error handling مناسب استفاده کن\n\n### Error Handling\n- از try-catch برای error handling استفاده کن\n- از error messages واضح استفاده کن\n- از error states در UI استفاده کن\n\n### Loading States\n- از loading states استفاده کن\n- از skeleton screens استفاده کن\n- از progress indicators استفاده کن\n\n## مدیریت وضعیت‌های بارگذاری و خطا\n\n### Loading States\n- از boolean flags برای loading استفاده کن (مثلاً `isLoading`)\n- از loading components استفاده کن\n- از optimistic updates در صورت مناسب استفاده کن\n\n### Error States\n- از error messages واضح استفاده کن\n- از retry mechanisms استفاده کن\n- از error boundaries یا global error handler استفاده کن\n\n### Empty States\n- از empty states استفاده کن\n- از helpful messages استفاده کن\n- از call-to-action استفاده کن\n\n## استراتژی caching داده‌ها\n\n### Client-Side Caching\n- از browser cache استفاده کن\n- از memory cache (مثلاً در store) استفاده کن\n- از cache invalidation استفاده کن\n\n### Cache Strategy\n- از cache-first برای static data استفاده کن\n- از network-first برای dynamic data استفاده کن\n- از stale-while-revalidate در صورت نیاز استفاده کن\n\n## مدیریت فرم‌ها و اعتبارسنجی\n\n### Form Validation\n- از client-side validation استفاده کن\n- از server-side validation استفاده کن\n- از real-time validation استفاده کن\n\n### Error Messages\n- از error messages واضح استفاده کن\n- از field-level errors استفاده کن\n- از form-level errors استفاده کن\n\n### User Experience\n- از inline validation استفاده کن\n- از helpful hints استفاده کن\n- از disabled states استفاده کن\n",
+        "raw": "---\ntitle: Api Integration\nsummary: Best practices for API integration, error handling, loading states, caching, and form validation\ndomain: frontend\ncategory: patterns\napplies_to:\n  - \"frontend/src/**/*.vue\"\n  - \"frontend/src/**/*.js\"\npriority: 50\nkind: skill\n---\n\n# API Integration Rules\n\n## بهترین شیوه‌ها برای ارتباط با backend\n\n### Service Layer\n- از service layer برای API calls استفاده کن (مثلاً `src/services/`)\n- از separation of concerns استفاده کن\n- از error handling مناسب استفاده کن\n\n### Error Handling\n- از try-catch برای error handling استفاده کن\n- از error messages واضح استفاده کن\n- از error states در UI استفاده کن\n\n## مدیریت وضعیت‌های بارگذاری و خطا\n\nالگوهای loading، error، empty، skeleton و toast در\n`knowledge/frontend/ui-ux/user-feedback.md`.\nOptimistic updates در `knowledge/frontend/ui-ux/interaction-patterns.md`.\n\n## استراتژی caching داده‌ها\n\n### Client-Side Caching\n- از browser cache استفاده کن\n- از memory cache (مثلاً در store) استفاده کن\n- از cache invalidation استفاده کن\n\n### Cache Strategy\n- از cache-first برای static data استفاده کن\n- از network-first برای dynamic data استفاده کن\n- از stale-while-revalidate در صورت نیاز استفاده کن\n\n## مدیریت فرم‌ها و اعتبارسنجی\n\n### Form Validation\n- از client-side validation استفاده کن\n- از server-side validation استفاده کن\n- از real-time validation استفاده کن\n\n### Error Messages\n- از error messages واضح استفاده کن\n- از field-level errors استفاده کن\n- از form-level errors استفاده کن\n\n### User Experience\n- از inline validation استفاده کن\n- از helpful hints استفاده کن\n- از disabled states استفاده کن\n",
         "summary": "Api Integration",
         "key_points": [
           "- \"frontend/src/**/*.vue\"",
@@ -1921,29 +1894,25 @@
           "- از try-catch برای error handling استفاده کن",
           "- از error messages واضح استفاده کن",
           "- از error states در UI استفاده کن",
-          "- از loading states استفاده کن",
-          "- از skeleton screens استفاده کن",
-          "- از progress indicators استفاده کن",
-          "- از boolean flags برای loading استفاده کن (مثلاً `isLoading`)",
-          "- از loading components استفاده کن",
-          "- از optimistic updates در صورت مناسب استفاده کن",
+          "- از browser cache استفاده کن",
+          "- از memory cache (مثلاً در store) استفاده کن",
+          "- از cache invalidation استفاده کن",
+          "- از cache-first برای static data استفاده کن",
+          "- از network-first برای dynamic data استفاده کن",
+          "- از stale-while-revalidate در صورت نیاز استفاده کن",
+          "- از client-side validation استفاده کن",
+          "- از server-side validation استفاده کن",
+          "- از real-time validation استفاده کن",
           "- از error messages واضح استفاده کن",
-          "- از retry mechanisms استفاده کن",
-          "- از error boundaries یا global error handler استفاده کن",
-          "- از empty states استفاده کن",
-          "- از helpful messages استفاده کن",
-          "- از call-to-action استفاده کن"
+          "- از field-level errors استفاده کن",
+          "- از form-level errors استفاده کن"
         ],
         "sections": [
           "# API Integration Rules",
           "## بهترین شیوه‌ها برای ارتباط با backend",
           "### Service Layer",
           "### Error Handling",
-          "### Loading States",
           "## مدیریت وضعیت‌های بارگذاری و خطا",
-          "### Loading States",
-          "### Error States",
-          "### Empty States",
           "## استراتژی caching داده‌ها",
           "### Client-Side Caching",
           "### Cache Strategy",
@@ -1994,7 +1963,7 @@
         "depends_on": [],
         "related": []
       },
-      "checksum": "85e22444b92b96602c1abdaa1f5767899ea86e7e6e7168bcfb93c0fd5b32dff7"
+      "checksum": "71d428da9c9c5eac1db6d13226ee8f86118395c3a316b47d9c01346007e9dea5"
     },
     {
       "type": "knowledge_ir",
@@ -2004,20 +1973,17 @@
       "category": "patterns",
       "kind": "skill",
       "content": {
-        "raw": "---\ntitle: Component Patterns\nsummary: Vue 3 component structure, script setup order, and standard patterns\ndomain: frontend\ncategory: patterns\napplies_to:\n  - \"frontend/src/**/*.vue\"\npriority: 50\nkind: skill\n---\n\n# Component Patterns (Vue 3)\n\n## Component Structure با &lt;script setup&gt;\n\n**ترتیب استاندارد در &lt;script setup&gt;:**\n1. Imports\n2. defineProps / defineEmits\n3. Composables (استفاده از store، router، composables دیگر)\n4. Local state (ref, reactive)\n5. computed\n6. watch / watchEffect\n7. Lifecycle (onMounted, onUnmounted, ...)\n8. Event handlers و helper functions\n\n✅ **Good:**\n```vue\n<script setup>\nimport { ref, computed, onMounted } from 'vue';\nimport { useAuthStore } from '@/stores/auth';\n\nconst props = defineProps({ ... });\nconst emit = defineEmits(['submit']);\n\nconst count = ref(0);\nconst doubled = computed(() => count.value * 2);\n\nonMounted(() => { ... });\n\nfunction handleSubmit() { ... }\n</script>\n\n<template>...</template>\n\n<style scoped>...</style>\n```\n\n## Props و Emits Pattern\n\n- از defineProps با type یا validator استفاده کن\n- از defineEmits برای events استفاده کن\n- Props و emits را در بالای script قرار بده\n\n## Slots Pattern\n\n- Default slot برای محتوای اصلی\n- Named slots برای بخش‌های خاص\n- Slot fallback با محتوای پیش‌فرض\n\n## استفاده از Pinia در کامپوننت\n\n- از store فقط در جایی که نیاز است استفاده کن\n- برای نگه داشتن reactivity از `storeToRefs(store)` استفاده کن؛ actions را مستقیم از store صدا بزن\n",
+        "raw": "---\ntitle: Component Patterns\nsummary: Vue 3 component structure, script setup order, and standard patterns\ndomain: frontend\ncategory: patterns\napplies_to:\n  - \"frontend/src/**/*.vue\"\npriority: 50\nkind: skill\n---\n\n# Component Patterns (Vue 3)\n\n## Component Structure با &lt;script setup&gt;\n\n**ترتیب استاندارد در &lt;script setup&gt;:**\n1. Imports\n2. defineProps / defineEmits\n3. Composables (استفاده از store، router، composables دیگر)\n4. Local state (ref, reactive)\n5. computed\n6. watch / watchEffect\n7. Lifecycle (onMounted, onUnmounted, ...)\n8. Event handlers و helper functions\n\n✅ **Good:**\n```vue\n<script setup>\nimport { ref, computed, onMounted } from 'vue';\nimport { useAuthStore } from '@/stores/auth';\n\nconst props = defineProps({ ... });\nconst emit = defineEmits(['submit']);\n\nconst count = ref(0);\nconst doubled = computed(() => count.value * 2);\n\nonMounted(() => { ... });\n\nfunction handleSubmit() { ... }\n</script>\n\n<template>...</template>\n\n<style scoped>...</style>\n```\n\n## Props و Emits Pattern\n\nجزئیات `defineProps` و `defineEmits` در\n`knowledge/frontend/patterns/props-events.md`.\nProps و emits را در بالای script قرار بده.\n\n## Slots Pattern\n\n- Default slot برای محتوای اصلی\n- Named slots برای بخش‌های خاص\n- Slot fallback با محتوای پیش‌فرض\n\n## استفاده از Pinia در کامپوننت\n\n- از store فقط در جایی که نیاز است استفاده کن\n- برای حفظ reactivity از `storeToRefs` استفاده کن؛ جزئیات در\n  `knowledge/frontend/state/pinia.md`\n",
         "summary": "Component Patterns",
         "key_points": [
           "- \"frontend/src/**/*.vue\"",
           "**ترتیب استاندارد در &lt;script setup&gt;:**",
           "✅ **Good:**",
-          "- از defineProps با type یا validator استفاده کن",
-          "- از defineEmits برای events استفاده کن",
-          "- Props و emits را در بالای script قرار بده",
           "- Default slot برای محتوای اصلی",
           "- Named slots برای بخش‌های خاص",
           "- Slot fallback با محتوای پیش‌فرض",
           "- از store فقط در جایی که نیاز است استفاده کن",
-          "- برای نگه داشتن reactivity از `storeToRefs(store)` استفاده کن؛ actions را مستقیم از store صدا بزن"
+          "- برای حفظ reactivity از `storeToRefs` استفاده کن؛ جزئیات در"
         ],
         "sections": [
           "# Component Patterns (Vue 3)",
@@ -2066,7 +2032,7 @@
         "depends_on": [],
         "related": []
       },
-      "checksum": "9bdab4ccc1fc305ee3820072123bb02a6e7de6368ee0dbf7a0b84473b13d92d4"
+      "checksum": "d450e97ff47586b505c455d39df6321954f6847a3f1f2b0073ca6d52dc405bb1"
     },
     {
       "type": "knowledge_ir",
@@ -2168,7 +2134,7 @@
       "category": "patterns",
       "kind": "skill",
       "content": {
-        "raw": "---\ntitle: Reactivity\nsummary: Vue 3 reactivity principles — ref, reactive, computed, watch\ndomain: frontend\ncategory: patterns\napplies_to:\n  - \"frontend/src/**/*.vue\"\n  - \"frontend/src/**/*.js\"\npriority: 50\nkind: skill\n---\n\n# Reactivity Principles (Vue 3)\n\n## ref و reactive\n\n**ref:** برای primitive values و references به object\n✅ **Good:**\n```javascript\nconst count = ref(0);\nconst user = ref({ name: 'Ali' });\n// در template: count، user — unwrap خودکار\n```\n\n**reactive:** برای objectها؛ نمی‌توان reassign کرد\n✅ **Good:**\n```javascript\nconst state = reactive({ count: 0, name: 'Ali' });\n```\n\n## computed\n\nبرای derived state که وابسته به reactive data است.\n✅ **Good:**\n```javascript\nconst doubled = computed(() => count.value * 2);\nconst fullName = computed(() => `${firstName.value} ${lastName.value}`);\n```\n\n❌ **Bad:** side effect در computed؛ computed باید pure باشد.\n\n## watch و watchEffect\n\n**watch:** برای side effects وقتی یک یا چند منبع تغییر می‌کند\n✅ **Good:**\n```javascript\nwatch(count, (newVal, oldVal) => { ... });\nwatch([a, b], ([newA, newB]) => { ... });\nwatch(() => obj.id, (id) => { ... }, { immediate: true });\n```\n\n**watchEffect:** برای اجرای فوری و track خودکار dependencies\n✅ **Good:** وقتی به همه dependencies در یک بلوک نیاز داری\n\n## قوانین\n\n- Reactive statements فقط زمانی اجرا می‌شوند که dependencies تغییر کنند\n- از circular dependencies پرهیز کن\n- در composables از ref/reactive برگردان و در component استفاده کن\n- برای store state از `storeToRefs` استفاده کن تا reactivity حفظ شود\n",
+        "raw": "---\ntitle: Reactivity\nsummary: Vue 3 reactivity principles — ref, reactive, computed, watch\ndomain: frontend\ncategory: patterns\napplies_to:\n  - \"frontend/src/**/*.vue\"\n  - \"frontend/src/**/*.js\"\npriority: 50\nkind: skill\n---\n\n# Reactivity Principles (Vue 3)\n\n## ref و reactive\n\n**ref:** برای primitive values و references به object\n✅ **Good:**\n```javascript\nconst count = ref(0);\nconst user = ref({ name: 'Ali' });\n// در template: count، user — unwrap خودکار\n```\n\n**reactive:** برای objectها؛ نمی‌توان reassign کرد\n✅ **Good:**\n```javascript\nconst state = reactive({ count: 0, name: 'Ali' });\n```\n\n## computed\n\nبرای derived state که وابسته به reactive data است.\n✅ **Good:**\n```javascript\nconst doubled = computed(() => count.value * 2);\nconst fullName = computed(() => `${firstName.value} ${lastName.value}`);\n```\n\n❌ **Bad:** side effect در computed؛ computed باید pure باشد.\n\n## watch و watchEffect\n\n**watch:** برای side effects وقتی یک یا چند منبع تغییر می‌کند\n✅ **Good:**\n```javascript\nwatch(count, (newVal, oldVal) => { ... });\nwatch([a, b], ([newA, newB]) => { ... });\nwatch(() => obj.id, (id) => { ... }, { immediate: true });\n```\n\n**watchEffect:** برای اجرای فوری و track خودکار dependencies\n✅ **Good:** وقتی به همه dependencies در یک بلوک نیاز داری\n\n## قوانین\n\n- Reactive statements فقط زمانی اجرا می‌شوند که dependencies تغییر کنند\n- از circular dependencies پرهیز کن\n- در composables از ref/reactive برگردان و در component استفاده کن\n- برای store state از `storeToRefs` استفاده کن؛ جزئیات در\n  `knowledge/frontend/state/pinia.md`\n",
         "summary": "Reactivity",
         "key_points": [
           "- \"frontend/src/**/*.vue\"",
@@ -2186,7 +2152,7 @@
           "- Reactive statements فقط زمانی اجرا می‌شوند که dependencies تغییر کنند",
           "- از circular dependencies پرهیز کن",
           "- در composables از ref/reactive برگردان و در component استفاده کن",
-          "- برای store state از `storeToRefs` استفاده کن تا reactivity حفظ شود"
+          "- برای store state از `storeToRefs` استفاده کن؛ جزئیات در"
         ],
         "sections": [
           "# Reactivity Principles (Vue 3)",
@@ -2241,7 +2207,7 @@
         "depends_on": [],
         "related": []
       },
-      "checksum": "de99448a9b727916ff9c02177ad65f86dc5221be03d5751e17ba48537ae06d9c"
+      "checksum": "f781161ff8e134010f6fb53975a8aeb36b89c63e73ee8eb8638490a9aa469d5f"
     },
     {
       "type": "knowledge_ir",
@@ -2503,102 +2469,13 @@
     },
     {
       "type": "knowledge_ir",
-      "id": "frontend-performance-optimization",
-      "source": "knowledge/frontend/performance/optimization.md",
-      "domain": "frontend",
-      "category": "performance",
-      "kind": "skill",
-      "content": {
-        "raw": "---\ntitle: Optimization\nsummary: General performance optimization techniques including code splitting, lazy loading, memoization, and virtualization\ndomain: frontend\ncategory: performance\napplies_to:\n  - \"frontend/src/**/*.vue\"\n  - \"frontend/src/**/*.js\"\npriority: 50\nkind: skill\n---\n\n# Performance Optimization Rules\n\n## تکنیک‌های بهینه‌سازی\n\n### Code Splitting\n- از dynamic imports استفاده کن\n- از route-based splitting استفاده کن\n- از component-based splitting استفاده کن\n\n### Lazy Loading\n- از lazy loading برای images استفاده کن\n- از lazy loading برای components استفاده کن\n- از Intersection Observer استفاده کن\n\n### Memoization\n- از memoization برای expensive calculations استفاده کن\n- از computed values استفاده کن\n- از caching برای API calls استفاده کن\n\n### Virtualization\n- از virtual lists برای lists بزرگ استفاده کن\n- از windowing برای tables بزرگ استفاده کن\n- از pagination برای data زیاد استفاده کن\n\n## قوانین\n\n### Bundle Size\n- از tree shaking استفاده کن\n- از code splitting استفاده کن\n- از dynamic imports استفاده کن\n\n### Runtime Performance\n- از efficient algorithms استفاده کن\n- از debouncing/throttling استفاده کن\n- از requestAnimationFrame استفاده کن\n\n### Memory Management\n- از proper cleanup استفاده کن\n- از event listener cleanup استفاده کن\n- از subscription cleanup استفاده کن\n\n### Network Optimization\n- از compression استفاده کن\n- از HTTP/2 استفاده کن\n",
-        "summary": "Optimization",
-        "key_points": [
-          "- \"frontend/src/**/*.vue\"",
-          "- \"frontend/src/**/*.js\"",
-          "- از dynamic imports استفاده کن",
-          "- از route-based splitting استفاده کن",
-          "- از component-based splitting استفاده کن",
-          "- از lazy loading برای images استفاده کن",
-          "- از lazy loading برای components استفاده کن",
-          "- از Intersection Observer استفاده کن",
-          "- از memoization برای expensive calculations استفاده کن",
-          "- از computed values استفاده کن",
-          "- از caching برای API calls استفاده کن",
-          "- از virtual lists برای lists بزرگ استفاده کن",
-          "- از windowing برای tables بزرگ استفاده کن",
-          "- از pagination برای data زیاد استفاده کن",
-          "- از tree shaking استفاده کن",
-          "- از code splitting استفاده کن",
-          "- از dynamic imports استفاده کن",
-          "- از efficient algorithms استفاده کن",
-          "- از debouncing/throttling استفاده کن",
-          "- از requestAnimationFrame استفاده کن"
-        ],
-        "sections": [
-          "# Performance Optimization Rules",
-          "## تکنیک‌های بهینه‌سازی",
-          "### Code Splitting",
-          "### Lazy Loading",
-          "### Memoization",
-          "### Virtualization",
-          "## قوانین",
-          "### Bundle Size",
-          "### Runtime Performance",
-          "### Memory Management",
-          "### Network Optimization"
-        ],
-        "code_blocks": []
-      },
-      "activation": {
-        "file_patterns": [
-          "frontend/src/**/*.vue",
-          "frontend/src/**/*.js"
-        ],
-        "keywords": [
-          "\"frontend/src/**/*.js\"",
-          "\"frontend/src/**/*.vue\"",
-          "applies_to:",
-          "category:",
-          "code",
-          "component-based",
-          "domain:",
-          "dynamic",
-          "frontend",
-          "general",
-          "imports",
-          "including",
-          "kind:",
-          "lazy",
-          "loading",
-          "loading,",
-          "memoization,",
-          "optimization",
-          "performance",
-          "priority:"
-        ]
-      },
-      "priority": 50,
-      "status": "active",
-      "applies_to": [
-        "frontend/src/**/*.vue",
-        "frontend/src/**/*.js"
-      ],
-      "depends_on": [],
-      "related": [],
-      "relationships": {
-        "depends_on": [],
-        "related": []
-      },
-      "checksum": "9524eb810e5d3e080ed4c8a306751708c437911a8b977333ecfb990e2cfb9d5f"
-    },
-    {
-      "type": "knowledge_ir",
       "id": "frontend-performance-runtime",
       "source": "knowledge/frontend/performance/runtime.md",
       "domain": "frontend",
       "category": "performance",
       "kind": "skill",
       "content": {
-        "raw": "---\ntitle: Runtime\nsummary: Runtime performance optimization including virtual scrolling, debouncing, throttling, requestAnimationFrame, and memoization\ndomain: frontend\ncategory: performance\napplies_to:\n  - \"frontend/src/**/*.vue\"\n  - \"frontend/src/**/*.js\"\npriority: 50\nkind: skill\n---\n\n# Runtime Performance\n\n## Virtual Scrolling\n\nبرای لیست‌های بلند (10,000+ items):\n- فقط visible items render کن\n- Dynamic height calculation\n- Smooth scrolling\n\n## Debouncing & Throttling\n\n- **Debounce:** برای search input (300ms delay)\n- **Throttle:** برای scroll events (100ms interval)\n\n## RequestAnimationFrame\n\nبرای animations:\n- استفاده از `requestAnimationFrame` به جای `setTimeout`\n- Smooth 60fps animations\n- Cancel animation در cleanup\n\n## Memoization\n\nبرای محاسبات سنگین:\n- Cache results\n- فقط recalculate هنگام dependency change\n- از unnecessary recalculations پرهیز کن\n- در Vue از `computed` استفاده کن\n\n## Image Optimization\n\n- WebP format\n- Lazy loading (`loading=\"lazy\"`)\n- Responsive images (`srcset`, `sizes`)\n- Progressive loading (skeleton screens)\n",
+        "raw": "---\ntitle: Runtime\nsummary: Runtime performance optimization including virtual scrolling, debouncing, throttling, requestAnimationFrame, and memoization\ndomain: frontend\ncategory: performance\napplies_to:\n  - \"frontend/src/**/*.vue\"\n  - \"frontend/src/**/*.js\"\npriority: 50\nkind: skill\n---\n\n# Runtime Performance\n\n## Virtual Scrolling\n\nبرای لیست‌های بلند (10,000+ items):\n- فقط visible items render کن\n- Dynamic height calculation\n- Smooth scrolling\n\n## Debouncing & Throttling\n\n- **Debounce:** برای search input (300ms delay)\n- **Throttle:** برای scroll events (100ms interval)\n\n## RequestAnimationFrame\n\nبرای animations:\n- استفاده از `requestAnimationFrame` به جای `setTimeout`\n- Smooth 60fps animations\n- Cancel animation در cleanup\n\n## Memoization\n\nبرای محاسبات سنگین:\n- Cache results\n- فقط recalculate هنگام dependency change\n- از unnecessary recalculations پرهیز کن\n- در Vue از `computed` استفاده کن\n\n## Image Optimization\n\nقوانین فرمت، lazy loading و `srcset` در\n`knowledge/frontend/performance/asset-management.md`.\n\n## Memory & Network\n\n- از proper cleanup استفاده کن (event listener و subscription)\n- از compression استفاده کن\n- از HTTP/2 استفاده کن\n",
         "summary": "Runtime",
         "key_points": [
           "- \"frontend/src/**/*.vue\"",
@@ -2615,10 +2492,9 @@
           "- فقط recalculate هنگام dependency change",
           "- از unnecessary recalculations پرهیز کن",
           "- در Vue از `computed` استفاده کن",
-          "- WebP format",
-          "- Lazy loading (`loading=\"lazy\"`)",
-          "- Responsive images (`srcset`, `sizes`)",
-          "- Progressive loading (skeleton screens)"
+          "- از proper cleanup استفاده کن (event listener و subscription)",
+          "- از compression استفاده کن",
+          "- از HTTP/2 استفاده کن"
         ],
         "sections": [
           "# Runtime Performance",
@@ -2626,7 +2502,8 @@
           "## Debouncing & Throttling",
           "## RequestAnimationFrame",
           "## Memoization",
-          "## Image Optimization"
+          "## Image Optimization",
+          "## Memory & Network"
         ],
         "code_blocks": []
       },
@@ -2670,7 +2547,7 @@
         "depends_on": [],
         "related": []
       },
-      "checksum": "324f6b07bc0307a230cf561fdbbba51a3c71fe5477220635b954fea7ddbd006d"
+      "checksum": "f30fd587577e5530da5c6fc0719ebddac3974e267f0ae6685e38307003e0e77f"
     },
     {
       "type": "knowledge_ir",
@@ -3085,16 +2962,13 @@
       "category": "tools",
       "kind": "skill",
       "content": {
-        "raw": "---\ntitle: Vite\nsummary: Vite configuration and optimization for frontend (Vue 3, Vue plugin)\ndomain: frontend\ncategory: tools\napplies_to:\n  - \"frontend/vite.config.*\"\n  - \"frontend/package.json\"\npriority: 50\nkind: skill\n---\n\n# Vite Configuration & Optimization (frontend)\n\n## Base Configuration\n\n```javascript\nimport { defineConfig } from 'vite';\nimport vue from '@vitejs/plugin-vue';\nimport path from 'path';\n\nexport default defineConfig({\n  plugins: [vue()],\n  resolve: {\n    alias: {\n      '@': path.resolve(__dirname, './src'),\n    },\n  },\n  build: {\n    target: 'es2015',\n    minify: 'terser',\n    cssMinify: true,\n    rollupOptions: {\n      output: {\n        manualChunks: {\n          vendor: ['vue', 'vue-router', 'pinia'],\n        },\n        assetFileNames: 'assets/[name]-[hash][extname]',\n        chunkFileNames: 'chunks/[name]-[hash].js',\n        entryFileNames: '[name]-[hash].js',\n      },\n    },\n    assetsInlineLimit: 4096,\n  },\n  server: {\n    port: 5173,\n    proxy: {\n      '/api': {\n        target: 'http://localhost:8000',\n        changeOrigin: true,\n      },\n    },\n  },\n  envPrefix: 'VITE_',\n});\n```\n\n## Code Splitting\n\n**Lazy loading برای route components:**\n```javascript\nconst routes = [\n  {\n    path: '/dashboard',\n    component: () => import('@/views/DashboardView.vue'),\n  },\n];\n```\n\n**قوانین:**\n- از code splitting برای routes استفاده کن\n- از tree shaking استفاده کن\n- از minification استفاده کن\n\n## Asset Optimization\n\n- از proper asset imports استفاده کن\n- از asset inlining برای فایل‌های کوچک (<4KB) استفاده کن\n\n## بهینه‌سازی\n\n### Configuration\n- از path alias (`@` → `src/`) استفاده کن\n- از environment variables با پیشوند `VITE_` استفاده کن\n\n### Development\n- از HMR استفاده کن\n- از dev server proxy برای API استفاده کن\n\n### Production\n- از chunk splitting برای vendor (vue, vue-router, pinia) استفاده کن\n- از build optimization استفاده کن\n",
+        "raw": "---\ntitle: Vite\nsummary: Vite configuration and optimization for frontend (Vue 3, Vue plugin)\ndomain: frontend\ncategory: tools\napplies_to:\n  - \"frontend/vite.config.*\"\n  - \"frontend/package.json\"\npriority: 50\nkind: skill\n---\n\n# Vite Configuration & Optimization (frontend)\n\n## Base Configuration\n\n```javascript\nimport { defineConfig } from 'vite';\nimport vue from '@vitejs/plugin-vue';\nimport path from 'path';\n\nexport default defineConfig({\n  plugins: [vue()],\n  resolve: {\n    alias: {\n      '@': path.resolve(__dirname, './src'),\n    },\n  },\n  build: {\n    target: 'es2015',\n    minify: 'terser',\n    cssMinify: true,\n    rollupOptions: {\n      output: {\n        manualChunks: {\n          vendor: ['vue', 'vue-router', 'pinia'],\n        },\n        assetFileNames: 'assets/[name]-[hash][extname]',\n        chunkFileNames: 'chunks/[name]-[hash].js',\n        entryFileNames: '[name]-[hash].js',\n      },\n    },\n    assetsInlineLimit: 4096,\n  },\n  server: {\n    port: 5173,\n    proxy: {\n      '/api': {\n        target: 'http://localhost:8000',\n        changeOrigin: true,\n      },\n    },\n  },\n  envPrefix: 'VITE_',\n});\n```\n\n## Code Splitting\n\n**Lazy loading برای route components:**\n```javascript\nconst routes = [\n  {\n    path: '/dashboard',\n    component: () => import('@/views/DashboardView.vue'),\n  },\n];\n```\n\n**قوانین:** بودجه bundle، tree shaking و code splitting در\n`knowledge/frontend/performance/bundle-size.md`.\nاین فایل فقط الگوی Vite-specific (`() => import(...)` و `manualChunks`) را پوشش می‌دهد.\n\n## Asset Optimization\n\n- از proper asset imports استفاده کن\n- از asset inlining برای فایل‌های کوچک (<4KB) استفاده کن\n\n## بهینه‌سازی\n\n### Configuration\n- از path alias (`@` → `src/`) استفاده کن\n- از environment variables با پیشوند `VITE_` استفاده کن\n\n### Development\n- از HMR استفاده کن\n- از dev server proxy برای API استفاده کن\n\n### Production\n- از chunk splitting برای vendor (vue, vue-router, pinia) استفاده کن\n- از build optimization استفاده کن\n",
         "summary": "Vite",
         "key_points": [
           "- \"frontend/vite.config.*\"",
           "- \"frontend/package.json\"",
           "**Lazy loading برای route components:**",
-          "**قوانین:**",
-          "- از code splitting برای routes استفاده کن",
-          "- از tree shaking استفاده کن",
-          "- از minification استفاده کن",
+          "**قوانین:** بودجه bundle، tree shaking و code splitting در",
           "- از proper asset imports استفاده کن",
           "- از asset inlining برای فایل‌های کوچک (<4KB) استفاده کن",
           "- از path alias (`@` → `src/`) استفاده کن",
@@ -3158,7 +3032,7 @@
         "depends_on": [],
         "related": []
       },
-      "checksum": "88f7a96f4632ad187a198fb0bbbf6db346cd17999d59e522c6d3bb298b293bb6"
+      "checksum": "bd53287d200cf5773bcf047df86d7314582663c3e61fe731e3531fadff7507f9"
     },
     {
       "type": "knowledge_ir",
@@ -3341,7 +3215,7 @@
       "category": "ui-ux",
       "kind": "skill",
       "content": {
-        "raw": "---\ntitle: Interaction Patterns\nsummary: Interaction patterns including form validation, optimistic UI updates, debouncing, throttling, animations, and modal patterns\ndomain: frontend\ncategory: ui-ux\napplies_to:\n  - \"frontend/src/**/*.vue\"\n  - \"frontend/src/**/*.js\"\npriority: 50\nkind: skill\n---\n\n# Interaction Patterns\n\n## Form Validation\n\n**Real-time validation:**\n- Validation بعد از blur\n- Show errors فقط برای fields touched\n- Clear errors هنگام تایپ\n- HTML5 validation به عنوان fallback\n\n**الگو:**\n1. User types\n2. User blurs field\n3. Show validation errors\n4. Clear errors on next input\n5. Submit validation (all fields)\n\n## Optimistic UI Updates\n\nبرای UX بهتر:\n1. UI را فوری update کن\n2. در background request بفرست\n3. در صورت خطا، rollback کن\n\n**مثال:** Like button, Delete item\n\n## Debouncing & Throttling\n\n- **Debounce:** برای search input (بعد از توقف تایپ)\n- **Throttle:** برای scroll events (حداکثر هر X میلی‌ثانیه)\n\n## Animation Principles\n\n- Subtle animations (150-300ms)\n- Easing functions طبیعی\n- Reduce motion برای accessibility\n- `prefers-reduced-motion` را respect کن\n\n## Modal & Dialog Patterns\n\n- Focus trap در modal\n- Escape key برای بستن\n- Click outside برای بستن (optional)\n- ARIA attributes (`aria-modal`, `aria-labelledby`)\n- Focus return بعد از بستن\n",
+        "raw": "---\ntitle: Interaction Patterns\nsummary: Interaction patterns including form validation, optimistic UI updates, debouncing, throttling, animations, and modal patterns\ndomain: frontend\ncategory: ui-ux\napplies_to:\n  - \"frontend/src/**/*.vue\"\n  - \"frontend/src/**/*.js\"\npriority: 50\nkind: skill\n---\n\n# Interaction Patterns\n\n## Form Validation\n\n**Real-time validation:**\n- Validation بعد از blur\n- Show errors فقط برای fields touched\n- Clear errors هنگام تایپ\n- HTML5 validation به عنوان fallback\n\n**الگو:**\n1. User types\n2. User blurs field\n3. Show validation errors\n4. Clear errors on next input\n5. Submit validation (all fields)\n\n## Optimistic UI Updates\n\nبرای UX بهتر:\n1. UI را فوری update کن\n2. در background request بفرست\n3. در صورت خطا، rollback کن\n\n**مثال:** Like button, Delete item\n\n## Debouncing & Throttling\n\nزمان‌بندی debounce/throttle در\n`knowledge/frontend/performance/runtime.md`.\n\n## Animation Principles\n\n- Subtle animations (150-300ms)\n- Easing functions طبیعی\n- `prefers-reduced-motion` را respect کن؛ جزئیات در\n  `knowledge/frontend/ui-ux/accessibility.md`\n\n## Modal & Dialog Patterns\n\n- Focus trap در modal\n- Escape key برای بستن\n- Click outside برای بستن (optional)\n- ARIA attributes (`aria-modal`, `aria-labelledby`)\n- Focus return بعد از بستن\n",
         "summary": "Interaction Patterns",
         "key_points": [
           "- \"frontend/src/**/*.vue\"",
@@ -3353,12 +3227,9 @@
           "- HTML5 validation به عنوان fallback",
           "**الگو:**",
           "**مثال:** Like button, Delete item",
-          "- **Debounce:** برای search input (بعد از توقف تایپ)",
-          "- **Throttle:** برای scroll events (حداکثر هر X میلی‌ثانیه)",
           "- Subtle animations (150-300ms)",
           "- Easing functions طبیعی",
-          "- Reduce motion برای accessibility",
-          "- `prefers-reduced-motion` را respect کن",
+          "- `prefers-reduced-motion` را respect کن؛ جزئیات در",
           "- Focus trap در modal",
           "- Escape key برای بستن",
           "- Click outside برای بستن (optional)",
@@ -3415,7 +3286,7 @@
         "depends_on": [],
         "related": []
       },
-      "checksum": "351f48a9c27602b877532790160d5f20776e11bd7ec0b9602d360d19b0967881"
+      "checksum": "2e9c3e3c0f39852af0c15e514510b3448daf5f84e3e12bbeef3ef3ffb8a35365"
     },
     {
       "type": "knowledge_ir",
@@ -3425,7 +3296,7 @@
       "category": "ui-ux",
       "kind": "skill",
       "content": {
-        "raw": "---\ntitle: Responsive Design\nsummary: Mobile-first responsive design principles, breakpoints, touch targets, responsive images, and CSS units\ndomain: frontend\ncategory: ui-ux\napplies_to:\n  - \"frontend/src/**/*.vue\"\n  - \"frontend/src/**/*.css\"\npriority: 50\nkind: skill\n---\n\n# Responsive Design\n\n## Mobile-First Approach\n\nطراحی از کوچک‌ترین صفحه (موبایل) شروع شود و به صفحات بزرگتر گسترش یابد.\n\n**قانون:**\n- Base styles بدون media query (موبایل)\n- Media queries فقط برای min-width (scale up)\n- از max-width استفاده نکن\n- از progressive enhancement استفاده کن\n\n## Breakpoints Strategy\n\n```css\n/* Base: 0-640px (mobile) - بدون media query */\n.container {\n  padding: 1rem;\n  font-size: 16px;\n}\n\n/* sm: 640px+ (large mobile) */\n@media (min-width: 640px) {\n  .container {\n    padding: 1.5rem;\n  }\n}\n\n/* md: 768px+ (tablet) */\n@media (min-width: 768px) {\n  .container {\n    padding: 2rem;\n    font-size: 18px;\n  }\n}\n\n/* lg: 1024px+ (desktop) */\n@media (min-width: 1024px) {\n  .container {\n    padding: 3rem;\n    max-width: 1200px;\n    margin: 0 auto;\n  }\n}\n```\n\n**Breakpoints استاندارد:**\n- Mobile: < 768px\n- Tablet: 768px - 1024px\n- Desktop: > 1024px\n\n## Touch Targets\n\n- حداقل 44×44px برای interactive elements\n- Spacing کافی بین دکمه‌ها\n- Thumb-friendly UI (دکمه‌های مهم در دسترس انگشت شست)\n\n## Responsive Images\n\n- استفاده از `srcset` با `sizes`\n- WebP format با fallback\n- `loading=\"lazy\"` برای images off-screen\n- `aspect-ratio` برای جلوگیری از layout shift\n\n## CSS Units\n\n- از viewport units استفاده کن (`vw`, `vh`, `rem`, `em`)\n- از px ثابت پرهیز کن (جز برای borders)\n- CSS Custom Properties برای responsive values\n- از container queries استفاده کن (در صورت امکان)\n\n## Layout\n\n- از flexible layouts استفاده کن (Flexbox, Grid)\n- از container queries استفاده کن (در صورت امکان)\n\n## Testing\n\n- در دستگاه‌های مختلف تست کن\n- از browser dev tools استفاده کن\n- از real devices استفاده کن\n",
+        "raw": "---\ntitle: Responsive Design\nsummary: Mobile-first responsive design principles, breakpoints, touch targets, responsive images, and CSS units\ndomain: frontend\ncategory: ui-ux\napplies_to:\n  - \"frontend/src/**/*.vue\"\n  - \"frontend/src/**/*.css\"\npriority: 50\nkind: skill\n---\n\n# Responsive Design\n\n## Mobile-First Approach\n\nطراحی از کوچک‌ترین صفحه (موبایل) شروع شود و به صفحات بزرگتر گسترش یابد.\n\n**قانون:**\n- Base styles بدون media query (موبایل)\n- Media queries فقط برای min-width (scale up)\n- از max-width استفاده نکن\n- از progressive enhancement استفاده کن\n\n## Breakpoints Strategy\n\n```css\n/* Base: 0-640px (mobile) - بدون media query */\n.container {\n  padding: 1rem;\n  font-size: 16px;\n}\n\n/* sm: 640px+ (large mobile) */\n@media (min-width: 640px) {\n  .container {\n    padding: 1.5rem;\n  }\n}\n\n/* md: 768px+ (tablet) */\n@media (min-width: 768px) {\n  .container {\n    padding: 2rem;\n    font-size: 18px;\n  }\n}\n\n/* lg: 1024px+ (desktop) */\n@media (min-width: 1024px) {\n  .container {\n    padding: 3rem;\n    max-width: 1200px;\n    margin: 0 auto;\n  }\n}\n```\n\n**Breakpoints استاندارد:**\n- Mobile: < 768px\n- Tablet: 768px - 1024px\n- Desktop: > 1024px\n\n## Touch Targets\n\n- حداقل 44×44px برای interactive elements\n- Spacing کافی بین دکمه‌ها\n- Thumb-friendly UI (دکمه‌های مهم در دسترس انگشت شست)\n\n## Responsive Images\n\nقوانین فرمت، `srcset`، lazy loading و `aspect-ratio` در\n`knowledge/frontend/performance/asset-management.md`.\n\n## CSS Units\n\n- از viewport units استفاده کن (`vw`, `vh`, `rem`, `em`)\n- از px ثابت پرهیز کن (جز برای borders)\n- CSS Custom Properties برای responsive values\n- از container queries استفاده کن (در صورت امکان)\n\n## Layout\n\n- از flexible layouts استفاده کن (Flexbox, Grid)\n- از container queries استفاده کن (در صورت امکان)\n\n## Testing\n\n- در دستگاه‌های مختلف تست کن\n- از browser dev tools استفاده کن\n- از real devices استفاده کن\n",
         "summary": "Responsive Design",
         "key_points": [
           "- \"frontend/src/**/*.vue\"",
@@ -3442,12 +3313,12 @@
           "- حداقل 44×44px برای interactive elements",
           "- Spacing کافی بین دکمه‌ها",
           "- Thumb-friendly UI (دکمه‌های مهم در دسترس انگشت شست)",
-          "- استفاده از `srcset` با `sizes`",
-          "- WebP format با fallback",
-          "- `loading=\"lazy\"` برای images off-screen",
-          "- `aspect-ratio` برای جلوگیری از layout shift",
           "- از viewport units استفاده کن (`vw`, `vh`, `rem`, `em`)",
-          "- از px ثابت پرهیز کن (جز برای borders)"
+          "- از px ثابت پرهیز کن (جز برای borders)",
+          "- CSS Custom Properties برای responsive values",
+          "- از container queries استفاده کن (در صورت امکان)",
+          "- از flexible layouts استفاده کن (Flexbox, Grid)",
+          "- از container queries استفاده کن (در صورت امکان)"
         ],
         "sections": [
           "# Responsive Design",
@@ -3501,7 +3372,7 @@
         "depends_on": [],
         "related": []
       },
-      "checksum": "85e860b4ad17a12d51c0fae3571020a73e4594d19b0a668cdcdd33b4c19ecf17"
+      "checksum": "a88322d6d8de5b403f85e161eed6a1ea41c5207e10799135c14432a6c54cc486"
     },
     {
       "type": "knowledge_ir",
@@ -3899,86 +3770,13 @@
     },
     {
       "type": "knowledge_ir",
-      "id": "shared-git-workflow",
-      "source": "knowledge/shared/git-workflow.md",
-      "domain": "shared",
-      "category": "git-workflow.mdc",
-      "kind": "workflow",
-      "content": {
-        "raw": "---\ntitle: Git Workflow\nsummary: Backend git workflow notes aligned with share/gitflow-unified\ndomain: shared\ncategory: git-workflow.mdc\napplies_to:\n  - \"backend/**/*\"\n  - \".github/**/*\"\npriority: 50\nkind: workflow\n---\n\n# Git & Version Control\n\n## Source of Truth\n\n- مرجع اصلی و الزامی Git Flow در پروژه:\n  - `knowledge/shared/gitflow-branch-policy.md`\n- اگر هر اختلافی وجود داشت، همیشه `knowledge/shared/gitflow-branch-policy.md` اولویت دارد.\n\n## Branch Strategy (Aligned)\n\n* `main`: production\n* `develop`: integration\n* `feature/*`: feature جدید\n* `bugfix/*`: رفع باگ محیط توسعه\n* `release/*`: آماده‌سازی release\n* `hotfix/*`: رفع فوری production\n\n```bash\ngit checkout develop\ngit pull origin develop\ngit checkout -b feature/add-payment develop\n```\n\n## Commit Convention\n\n```\ntype(scope): description\n\n# انواع:\nfeat:   feature جدید\nfix:    رفع باگ\nrefactor: تغییر بدون تغییر رفتار\ntest:   تست\ndocs:   مستندات\nchore:  نگهداری\n```\n\nمثال:\n\n```\nfeat(auth): add JWT authentication to user login\n```\n\n## High-Risk Change (تغییر پرخطر)\n\nAI باید این موارد را **explicitly اعلام خطر** کند:\n\n* تغییر در database schema\n* تغییر در API contract (breaking changes)\n* تغییر در authentication/authorization\n* refactoring بیش از ۱۰۰ خط\n* افزودن dependency جدید\n* حذف field یا endpoint\n",
-        "summary": "Git Workflow",
-        "key_points": [
-          "- \"backend/**/*\"",
-          "- \".github/**/*\"",
-          "- مرجع اصلی و الزامی Git Flow در پروژه:",
-          "- `knowledge/shared/gitflow-branch-policy.md`",
-          "- اگر هر اختلافی وجود داشت، همیشه `knowledge/shared/gitflow-branch-policy.md` اولویت دارد."
-        ],
-        "sections": [
-          "# Git & Version Control",
-          "## Source of Truth",
-          "## Branch Strategy (Aligned)",
-          "## Commit Convention",
-          "# انواع:",
-          "## High-Risk Change (تغییر پرخطر)"
-        ],
-        "code_blocks": [
-          "git checkout develop\ngit pull origin develop\ngit checkout -b feature/add-payment develop",
-          "type(scope): description\n\n# انواع:\nfeat:   feature جدید\nfix:    رفع باگ\nrefactor: تغییر بدون تغییر رفتار\ntest:   تست\ndocs:   مستندات\nchore:  نگهداری",
-          "feat(auth): add JWT authentication to user login"
-        ]
-      },
-      "activation": {
-        "file_patterns": [
-          "backend/**/*",
-          ".github/**/*"
-        ],
-        "keywords": [
-          "\".github/**/*\"",
-          "\"backend/**/*\"",
-          "(aligned)",
-          "`knowledge/shared/gitflow-branch-policy.md`",
-          "`main`:",
-          "aligned",
-          "applies_to:",
-          "backend",
-          "branch",
-          "category:",
-          "control",
-          "domain:",
-          "flow",
-          "git-workflow.mdc",
-          "kind:",
-          "notes",
-          "priority:",
-          "production",
-          "share/gitflow-unified",
-          "shared"
-        ]
-      },
-      "priority": 50,
-      "status": "active",
-      "applies_to": [
-        "backend/**/*",
-        ".github/**/*"
-      ],
-      "depends_on": [],
-      "related": [],
-      "relationships": {
-        "depends_on": [],
-        "related": []
-      },
-      "checksum": "d8db3be314cb2bed66897f0cc686ce4ec754aca41438f56c4abb0d8b28306d96"
-    },
-    {
-      "type": "knowledge_ir",
       "id": "shared-gitflow-branch-policy",
       "source": "knowledge/shared/gitflow-branch-policy.md",
       "domain": "shared",
       "category": "gitflow-branch-policy.mdc",
       "kind": "workflow",
       "content": {
-        "raw": "---\ntitle: Gitflow Branch Policy\nsummary: Canonical Git Flow branch policy and guardrails for this project\ndomain: shared\ncategory: gitflow-branch-policy.mdc\napplies_to:\npriority: 80\nkind: workflow\n---\n\n# GitFlow Branch Policy (OilChenger)\n\n## هدف\n- این قانون مرجع اصلی Git Flow برای پیشنهادهای AI در این پروژه است.\n- AI باید توسعه را فقط روی branchهای کاری انجام دهد و از commit مستقیم روی `main`/`develop` جلوگیری کند.\n\n## مدل شاخه‌ها\n- `main`: فقط نسخه پایدار production-ready\n- `develop`: شاخه integration (فقط از طریق PR)\n- `feature/*`: توسعه قابلیت جدید (از `develop`)\n- `bugfix/*`: رفع باگ محیط توسعه (از `develop`)\n- `release/*`: آماده‌سازی نسخه (از `develop`)\n- `hotfix/*`: رفع فوری production (از `main`)\n\n## قوانین قطعی\n1. هرگز commit مستقیم روی `main` یا `develop` پیشنهاد نده.\n2. برای شروع کار جدید همیشه اول `develop` را به‌روز کن.\n3. branch جدید را صریحاً از شاخه مبدا بساز (`git checkout -b ... develop`).\n4. قبل از PR، feature branch را با `origin/develop` همگام کن.\n5. اگر rebase انجام شد، فقط `--force-with-lease` مجاز است (نه `--force`).\n6. ادغام `feature/*` یا `bugfix/*` به `develop` فقط از طریق Pull Request مجاز است.\n7. برای ادغام عادی به `develop` هرگز دستور merge مستقیم محلی (`git merge feature/...`) پیشنهاد نده.\n\n## ترتیب استاندارد شروع Feature\n```bash\ngit checkout develop\ngit pull origin develop\ngit checkout -b feature/<short-name> develop\n```\n\n## نام‌گذاری پیشنهادی\n- `feature/add-user-profile`\n- `feature/124-login-with-google`\n- `bugfix/login-validation`\n- `hotfix/security-patch-2026`\n\n## Commit Convention\nفرمت:\n```text\ntype(scope): description\n```\n\nنوع‌ها:\n- `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`\n\nنمونه:\n```bash\ngit commit -m \"feat(auth): add Google OAuth login flow\"\n```\n\n## همگام‌سازی Feature قبل از PR (اجباری)\n```bash\ngit checkout feature/<name>\ngit fetch origin\ngit merge origin/develop\n# یا در صورت نیاز:\n# git rebase origin/develop\n```\n\nدر صورت conflict:\n1. فایل‌ها را اصلاح کن\n2. `git add <file>`\n3. ادامه فرآیند (`git merge --continue` یا `git rebase --continue`)\n\n## Push و PR (اجباری برای ادغام به `develop`)\n```bash\ngit push -u origin feature/<name>\n# اگر rebase شده:\ngit push --force-with-lease origin feature/<name>\n\n# ساخت PR به develop\ngh pr create --base develop --head feature/<name> --title \"<title>\" --body \"<body>\"\n```\n\nPR باید:\n- From: `feature/*`\n- To: `develop`\n- شامل هدف تغییر، خلاصه تغییرات، وضعیت تست/build باشد\n\n## چک‌لیست قبل از PR\n- `git status` تمیز یا قابل‌انتظار است\n- branch با `origin/develop` به‌روز شده\n- conflictها حل شده\n- build موفق است\n- تست‌های مرتبط پاس شده‌اند\n- commit messageها استاندارد هستند\n\n## قاعده ادغام به `develop` (خیلی مهم)\n- مسیر مجاز ادغام: `feature/*` یا `bugfix/*` -> Pull Request -> `develop`\n- merge مستقیم محلی روی `develop` برای جریان عادی مجاز نیست.\n- اگر کاربر درخواست merge مستقیم داد، ابتدا مسیر PR را پیشنهاد بده و دلیل ایمنی را کوتاه توضیح بده.\n\n## رفتار اجباری AI در پیشنهاد دستورات\n- قبل از دستورهای حساس، ابتدا `git status` پیشنهاد بده.\n- در صورت مشاهده الگوی خطرناک (مثل کار روی `main`/`develop`)، هشدار صریح بده.\n- در صورت ابهام در هدف کاربر، اول هدف را شفاف کن و سپس دستور بده.\n- برای ادغام به `develop` ابتدا push branch و سپس PR را راهنمایی/اجرا کن.\n\n## پاک‌سازی بعد از PR Merge\n```bash\ngit checkout develop\ngit pull origin develop\ngit branch -d feature/<name>\ngit push origin --delete feature/<name>\n```\n",
+        "raw": "---\ntitle: Gitflow Branch Policy\nsummary: Canonical Git Flow branch policy and guardrails for this project\ndomain: shared\ncategory: gitflow-branch-policy.mdc\napplies_to:\npriority: 80\nkind: workflow\n---\n\n# GitFlow Branch Policy (OilChenger)\n\n## هدف\n- این قانون مرجع اصلی Git Flow برای پیشنهادهای AI در این پروژه است.\n- AI باید توسعه را فقط روی branchهای کاری انجام دهد و از commit مستقیم روی `main`/`develop` جلوگیری کند.\n\n## مدل شاخه‌ها\n- `main`: فقط نسخه پایدار production-ready\n- `develop`: شاخه integration (فقط از طریق PR)\n- `feature/*`: توسعه قابلیت جدید (از `develop`)\n- `bugfix/*`: رفع باگ محیط توسعه (از `develop`)\n- `release/*`: آماده‌سازی نسخه (از `develop`)\n- `hotfix/*`: رفع فوری production (از `main`)\n\n## قوانین قطعی\n1. هرگز commit مستقیم روی `main` یا `develop` پیشنهاد نده.\n2. برای شروع کار جدید همیشه اول `develop` را به‌روز کن.\n3. branch جدید را صریحاً از شاخه مبدا بساز (`git checkout -b ... develop`).\n4. قبل از PR، feature branch را با `origin/develop` همگام کن.\n5. اگر rebase انجام شد، فقط `--force-with-lease` مجاز است (نه `--force`).\n6. ادغام `feature/*` یا `bugfix/*` به `develop` فقط از طریق Pull Request مجاز است.\n7. برای ادغام عادی به `develop` هرگز دستور merge مستقیم محلی (`git merge feature/...`) پیشنهاد نده.\n\n## ترتیب استاندارد شروع Feature\n```bash\ngit checkout develop\ngit pull origin develop\ngit checkout -b feature/<short-name> develop\n```\n\n## نام‌گذاری پیشنهادی\n- `feature/add-user-profile`\n- `feature/124-login-with-google`\n- `bugfix/login-validation`\n- `hotfix/security-patch-2026`\n\n## Commit Convention\nفرمت:\n```text\ntype(scope): description\n```\n\nنوع‌ها:\n- `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`\n\nنمونه:\n```bash\ngit commit -m \"feat(auth): add Google OAuth login flow\"\n```\n\n## همگام‌سازی Feature قبل از PR (اجباری)\n```bash\ngit checkout feature/<name>\ngit fetch origin\ngit merge origin/develop\n# یا در صورت نیاز:\n# git rebase origin/develop\n```\n\nدر صورت conflict:\n1. فایل‌ها را اصلاح کن\n2. `git add <file>`\n3. ادامه فرآیند (`git merge --continue` یا `git rebase --continue`)\n\n## Push و PR (اجباری برای ادغام به `develop`)\n```bash\ngit push -u origin feature/<name>\n# اگر rebase شده:\ngit push --force-with-lease origin feature/<name>\n\n# ساخت PR به develop\ngh pr create --base develop --head feature/<name> --title \"<title>\" --body \"<body>\"\n```\n\nPR باید:\n- From: `feature/*`\n- To: `develop`\n- شامل هدف تغییر، خلاصه تغییرات، وضعیت تست/build باشد\n\n## چک‌لیست قبل از PR\n- `git status` تمیز یا قابل‌انتظار است\n- branch با `origin/develop` به‌روز شده\n- conflictها حل شده\n- build موفق است\n- تست‌های مرتبط پاس شده‌اند\n- commit messageها استاندارد هستند\n\n## قاعده ادغام به `develop` (خیلی مهم)\n- مسیر مجاز ادغام: `feature/*` یا `bugfix/*` -> Pull Request -> `develop`\n- merge مستقیم محلی روی `develop` برای جریان عادی مجاز نیست.\n- اگر کاربر درخواست merge مستقیم داد، ابتدا مسیر PR را پیشنهاد بده و دلیل ایمنی را کوتاه توضیح بده.\n\n## رفتار اجباری AI در پیشنهاد دستورات\n- قبل از دستورهای حساس، ابتدا `git status` پیشنهاد بده.\n- در صورت مشاهده الگوی خطرناک (مثل کار روی `main`/`develop`)، هشدار صریح بده.\n- در صورت ابهام در هدف کاربر، اول هدف را شفاف کن و سپس دستور بده.\n- برای ادغام به `develop` ابتدا push branch و سپس PR را راهنمایی/اجرا کن.\n\n## پاک‌سازی بعد از PR Merge\n```bash\ngit checkout develop\ngit pull origin develop\ngit branch -d feature/<name>\ngit push origin --delete feature/<name>\n```\n\n## High-Risk Change (تغییر پرخطر)\n\nAI باید این موارد را **explicitly اعلام خطر** کند:\n\n* تغییر در database schema\n* تغییر در API contract (breaking changes)\n* تغییر در authentication/authorization\n* refactoring بیش از ۱۰۰ خط\n* افزودن dependency جدید\n* حذف field یا endpoint\n",
         "summary": "Gitflow Branch Policy",
         "key_points": [
           "- این قانون مرجع اصلی Git Flow برای پیشنهادهای AI در این پروژه است.",
@@ -4019,7 +3817,8 @@
           "## چک‌لیست قبل از PR",
           "## قاعده ادغام به `develop` (خیلی مهم)",
           "## رفتار اجباری AI در پیشنهاد دستورات",
-          "## پاک‌سازی بعد از PR Merge"
+          "## پاک‌سازی بعد از PR Merge",
+          "## High-Risk Change (تغییر پرخطر)"
         ],
         "code_blocks": [
           "git checkout develop\ngit pull origin develop\ngit checkout -b feature/<short-name> develop",
@@ -4063,7 +3862,7 @@
         "depends_on": [],
         "related": []
       },
-      "checksum": "7efe28cb6a7ed96d05652c1ad4bd77c262e1e5955d31c2d58ad20a5d31d6bbe5"
+      "checksum": "437594a2f8766ef29dc9be5f3b6b7f21625a09c3120f13c88c3681eedc2638d6"
     },
     {
       "type": "knowledge_ir",
