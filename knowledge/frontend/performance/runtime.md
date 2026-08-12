@@ -41,7 +41,11 @@ kind: skill
 
 ## Image Optimization
 
-- WebP format
-- Lazy loading (`loading="lazy"`)
-- Responsive images (`srcset`, `sizes`)
-- Progressive loading (skeleton screens)
+قوانین فرمت، lazy loading و `srcset` در
+`knowledge/frontend/performance/asset-management.md`.
+
+## Memory & Network
+
+- از proper cleanup استفاده کن (event listener و subscription)
+- از compression استفاده کن
+- از HTTP/2 استفاده کن

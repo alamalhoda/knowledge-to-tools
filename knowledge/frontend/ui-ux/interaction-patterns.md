@@ -38,15 +38,15 @@ kind: skill
 
 ## Debouncing & Throttling
 
-- **Debounce:** برای search input (بعد از توقف تایپ)
-- **Throttle:** برای scroll events (حداکثر هر X میلی‌ثانیه)
+زمان‌بندی debounce/throttle در
+`knowledge/frontend/performance/runtime.md`.
 
 ## Animation Principles
 
 - Subtle animations (150-300ms)
 - Easing functions طبیعی
-- Reduce motion برای accessibility
-- `prefers-reduced-motion` را respect کن
+- `prefers-reduced-motion` را respect کن؛ جزئیات در
+  `knowledge/frontend/ui-ux/accessibility.md`
 
 ## Modal & Dialog Patterns
 

@@ -174,43 +174,6 @@ def change_password(user, new_password: str):
 
 **Explanation:** View only orchestrates; Service holds business logic; Serializer only validates and serializes.
 
-❌ نادرست / Wrong:
-
-```python
-# business logic در View
-class OrderViewSet(ModelViewSet):
-    def create(self, request):
-        if request.user.profile.balance < 0:
-            raise ValidationError("No balance")
-        order = Order.objects.create(
-            user=request.user,
-            total=request.data["total"],
-        )
-        send_email(order.user.email, "Order created")
-        return Response(OrderSerializer(order).data)
-```
-
-✅ درست / Correct:
-
-```python
-# View فقط orchestration
-class OrderViewSet(ModelViewSet):
-    def create(self, request):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        order = CreateOrderService().execute(
-            user=request.user,
-            validated_data=serializer.validated_data,
-        )
-        return Response(OrderSerializer(order).data, status=201)
-
-
-# Service — business logic
-class CreateOrderService:
-    def execute(self, user, validated_data):
-        if user.profile.balance < 0:
-            raise DomainError("Insufficient balance")
-        order = Order.objects.create(user=user, **validated_data)
-        OrderNotificationService().send_created(order)
-        return order
-```
+قرارگیری لایه‌ها، ViewSet-only، و مثال‌های کد در
+`knowledge/backend/architecture/django-architecture.md`
+تعریف شده‌اند.

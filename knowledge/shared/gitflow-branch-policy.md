@@ -113,3 +113,14 @@ git pull origin develop
 git branch -d feature/<name>
 git push origin --delete feature/<name>
 ```
+
+## High-Risk Change (تغییر پرخطر)
+
+AI باید این موارد را **explicitly اعلام خطر** کند:
+
+* تغییر در database schema
+* تغییر در API contract (breaking changes)
+* تغییر در authentication/authorization
+* refactoring بیش از ۱۰۰ خط
+* افزودن dependency جدید
+* حذف field یا endpoint

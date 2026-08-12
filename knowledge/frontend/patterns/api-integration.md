@@ -24,27 +24,11 @@ kind: skill
 - از error messages واضح استفاده کن
 - از error states در UI استفاده کن
 
-### Loading States
-- از loading states استفاده کن
-- از skeleton screens استفاده کن
-- از progress indicators استفاده کن
-
 ## مدیریت وضعیت‌های بارگذاری و خطا
 
-### Loading States
-- از boolean flags برای loading استفاده کن (مثلاً `isLoading`)
-- از loading components استفاده کن
-- از optimistic updates در صورت مناسب استفاده کن
-
-### Error States
-- از error messages واضح استفاده کن
-- از retry mechanisms استفاده کن
-- از error boundaries یا global error handler استفاده کن
-
-### Empty States
-- از empty states استفاده کن
-- از helpful messages استفاده کن
-- از call-to-action استفاده کن
+الگوهای loading، error، empty، skeleton و toast در
+`knowledge/frontend/ui-ux/user-feedback.md`.
+Optimistic updates در `knowledge/frontend/ui-ux/interaction-patterns.md`.
 
 ## استراتژی caching داده‌ها
 

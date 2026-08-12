@@ -69,10 +69,8 @@ kind: skill
 
 ## Responsive Images
 
-- استفاده از `srcset` با `sizes`
-- WebP format با fallback
-- `loading="lazy"` برای images off-screen
-- `aspect-ratio` برای جلوگیری از layout shift
+قوانین فرمت، `srcset`، lazy loading و `aspect-ratio` در
+`knowledge/frontend/performance/asset-management.md`.
 
 ## CSS Units
 

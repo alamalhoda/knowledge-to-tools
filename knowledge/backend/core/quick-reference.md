@@ -19,91 +19,22 @@ kind: reference
 
 ## 1. Permission دارد؟ / Permissions defined?
 
-ViewSetها باید `permission_classes` و در صورت نیاز `throttle_classes` داشته باشند.
-
-**English:** ViewSets must have `permission_classes` and optionally `throttle_classes`.
-
-❌ نادرست / Wrong:
-
-```python
-class OrderViewSet(ModelViewSet):
-    queryset = Order.objects.all()
-    serializer_class = OrderSerializer
-    # بدون permission!
-```
-
-✅ درست / Correct:
-
-```python
-class OrderViewSet(ModelViewSet):
-    queryset = Order.objects.all()
-    serializer_class = OrderSerializer
-    permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
-    throttle_classes = [UserRateThrottle]
-```
+ViewSetها باید `permission_classes` و در صورت نیاز `throttle_classes` داشته باشند. جزئیات و مثال در
+`knowledge/backend/security/security.md`.
 
 ---
 
 ## 2. Serializer فقط validation؟ / Serializer for validation only?
 
-منطق تجاری در Serializer نگذار؛ فقط validation و فراخوانی service.
-
-**English:** Don't put business logic in Serializer; only validation and service call.
-
-❌ نادرست / Wrong:
-
-```python
-class OrderSerializer(serializers.ModelSerializer):
-    def create(self, validated_data):
-        charge_payment(validated_data["amount"])
-        order = Order.objects.create(**validated_data)
-        send_notification(order)
-        return order
-```
-
-✅ درست / Correct:
-
-```python
-class OrderSerializer(serializers.ModelSerializer):
-    def create(self, validated_data):
-        return CreateOrderService().execute(
-            user=self.context["request"].user,
-            validated_data=validated_data,
-        )
-```
+منطق تجاری در Serializer نگذار؛ فقط validation و فراخوانی service. جزئیات و مثال در
+`knowledge/backend/architecture/django-architecture.md`.
 
 ---
 
 ## 3. Business logic در service؟ / Business logic in service?
 
-منطق تجاری در Service؛ View فقط orchestration.
-
-**English:** Business logic in Service; View only orchestrates.
-
-❌ نادرست / Wrong:
-
-```python
-class OrderViewSet(ModelViewSet):
-    def create(self, request):
-        if request.user.profile.balance < 0:
-            raise ValidationError("No balance")
-        order = Order.objects.create(user=request.user, **request.data)
-        return Response(OrderSerializer(order).data)
-```
-
-✅ درست / Correct:
-
-```python
-class OrderViewSet(ModelViewSet):
-    def create(self, request):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        order = CreateOrderService().execute(
-            user=request.user,
-            validated_data=serializer.validated_data,
-        )
-        return Response(OrderSerializer(order).data, status=201)
-```
+منطق تجاری در Service؛ View فقط orchestration. جزئیات و مثال در
+`knowledge/backend/architecture/django-architecture.md`.
 
 ---
 
@@ -168,26 +99,8 @@ class OrderAPITest(APITestCase):
 
 ## 6. N+1 برطرف شده؟ / N+1 fixed?
 
-برای foreign key: `select_related`. برای many-to-many / reverse FK: `prefetch_related`.
-
-**English:** For FK: `select_related`. For M2M / reverse FK: `prefetch_related`.
-
-❌ نادرست / Wrong:
-
-```python
-for order in Order.objects.all():
-    print(order.user.email)  # هر بار query جدید — N+1!
-```
-
-✅ درست / Correct:
-
-```python
-for order in Order.objects.select_related("user"):
-    print(order.user.email)  # یک query
-
-# برای many-to-many یا reverse FK
-orders = Order.objects.prefetch_related("items")
-```
+برای foreign key: `select_related`. برای many-to-many / reverse FK: `prefetch_related`. جزئیات و مثال در
+`knowledge/backend/performance/optimization.md`.
 
 ---
 

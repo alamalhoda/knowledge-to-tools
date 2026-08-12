@@ -33,34 +33,13 @@ kind: architecture
 
 ### Props Design
 
-- از `defineProps` با type یا validator استفاده کن
-- از default values مناسب استفاده کن
-- در .js از JSDoc برای type hint استفاده کن
-- Props مستند شده
-
-✅ **Good (script setup):**
-```vue
-<script setup>
-const props = defineProps({
-  variant: { type: String, default: 'primary' },
-  disabled: { type: Boolean, default: false }
-});
-</script>
-```
+جزئیات `defineProps`، types، defaults و validation در
+`knowledge/frontend/patterns/props-events.md`.
 
 ### Emits Design
 
-- از `defineEmits` برای custom events استفاده کن
-- از event names واضح (kebab-case در template) استفاده کن
-- از payload structure ثابت استفاده کن
-
-✅ **Good:**
-```vue
-<script setup>
-const emit = defineEmits(['submit', 'cancel']);
-emit('submit', { id: 1, name: 'Ali' });
-</script>
-```
+جزئیات `defineEmits`، naming و payload در
+`knowledge/frontend/patterns/props-events.md`.
 
 ### Slots Pattern
 
@@ -93,16 +72,7 @@ emit('submit', { id: 1, name: 'Ali' });
 
 ## Atomic Design در frontend
 
-**ساختار:**
-```
-components/
-├── ui/           # atoms & molecules
-│   ├── Button.vue
-│   ├── Input.vue
-│   ├── Card.vue
-│   └── Modal.vue
-├── features/     # feature-specific
-├── layout/       # MainLayout, Sidebar, Header
-```
-
-**قانون:** کامپوننت‌های کوچک را بساز و با composition ترکیب کن
+سلسله‌مراتب atoms/molecules/organisms در
+`knowledge/frontend/architecture/atomic-design.md`.
+ساختار پوشه `components/` در
+`knowledge/frontend/architecture/project-structure.md`.

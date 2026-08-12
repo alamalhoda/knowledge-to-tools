@@ -47,9 +47,9 @@ function handleSubmit() { ... }
 
 ## Props و Emits Pattern
 
-- از defineProps با type یا validator استفاده کن
-- از defineEmits برای events استفاده کن
-- Props و emits را در بالای script قرار بده
+جزئیات `defineProps` و `defineEmits` در
+`knowledge/frontend/patterns/props-events.md`.
+Props و emits را در بالای script قرار بده.
 
 ## Slots Pattern
 
@@ -60,4 +60,5 @@ function handleSubmit() { ... }
 ## استفاده از Pinia در کامپوننت
 
 - از store فقط در جایی که نیاز است استفاده کن
-- برای نگه داشتن reactivity از `storeToRefs(store)` استفاده کن؛ actions را مستقیم از store صدا بزن
+- برای حفظ reactivity از `storeToRefs` استفاده کن؛ جزئیات در
+  `knowledge/frontend/state/pinia.md`

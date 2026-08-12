@@ -67,10 +67,9 @@ const routes = [
 ];
 ```
 
-**قوانین:**
-- از code splitting برای routes استفاده کن
-- از tree shaking استفاده کن
-- از minification استفاده کن
+**قوانین:** بودجه bundle، tree shaking و code splitting در
+`knowledge/frontend/performance/bundle-size.md`.
+این فایل فقط الگوی Vite-specific (`() => import(...)` و `manualChunks`) را پوشش می‌دهد.
 
 ## Asset Optimization
 

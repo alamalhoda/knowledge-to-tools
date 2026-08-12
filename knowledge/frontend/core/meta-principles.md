@@ -34,16 +34,15 @@ kind: principle
 - فرم‌ها باید با HTML5 validation کار کنند.
 
 ### Mobile-First Design
-- base styles بدون media query (موبایل) باشند.
-- media queryها فقط `min-width` باشند.
-- touch targets حداقل `44x44px` رعایت شوند.
+جزئیات breakpoints، touch targets و CSS units در
+`knowledge/frontend/ui-ux/responsive-design.md`.
 
 ### Accessibility First
 - semantic HTML همیشه اولویت دارد.
 - ARIA فقط وقتی semantic کافی نیست استفاده شود.
 - همه عناصر تعاملی باید keyboard-accessible باشند.
+جزئیات WCAG در `knowledge/frontend/ui-ux/accessibility.md`.
 
 ### Performance First (Frontend)
-- lazy loading برای محتوای off-screen.
-- code splitting برای routeها.
-- بهینه‌سازی image/font پیش‌فرض باشد.
+بودجه bundle در `knowledge/frontend/performance/bundle-size.md`.
+متریک‌های LCP/FID/CLS در `knowledge/frontend/performance/core-web-vitals.md`.

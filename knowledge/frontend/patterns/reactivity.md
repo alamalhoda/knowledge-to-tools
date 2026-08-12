@@ -57,4 +57,5 @@ watch(() => obj.id, (id) => { ... }, { immediate: true });
 - Reactive statements فقط زمانی اجرا می‌شوند که dependencies تغییر کنند
 - از circular dependencies پرهیز کن
 - در composables از ref/reactive برگردان و در component استفاده کن
-- برای store state از `storeToRefs` استفاده کن تا reactivity حفظ شود
+- برای store state از `storeToRefs` استفاده کن؛ جزئیات در
+  `knowledge/frontend/state/pinia.md`

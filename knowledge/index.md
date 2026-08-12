@@ -86,7 +86,6 @@
 - [Asset Management](frontend/performance/asset-management.md)
 - [Bundle Size](frontend/performance/bundle-size.md)
 - [Core Web Vitals](frontend/performance/core-web-vitals.md)
-- [Optimization](frontend/performance/optimization.md)
 - [Runtime](frontend/performance/runtime.md)
 
 ### state
@@ -130,10 +129,6 @@
 ### engineering-principles.mdc
 
 - [Engineering Principles](shared/engineering-principles.md)
-
-### git-workflow.mdc
-
-- [Git Workflow](shared/git-workflow.md)
 
 ### gitflow-branch-policy.mdc
 
@@ -181,10 +176,6 @@ shared::offline-no-cdn-policy.mdc::Offline No Cdn Policy
 
 ```
 shared::rule-precedence.mdc::Rule Precedence
-```
-
-```
-shared::git-workflow.mdc::Git Workflow
 ```
 
 ```
@@ -317,10 +308,6 @@ frontend::ui-ux::Responsive Design
 
 ```
 frontend::performance::Bundle Size
-```
-
-```
-frontend::performance::Optimization
 ```
 
 ```

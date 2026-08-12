@@ -24,26 +24,19 @@ kind: rule
    - تاخیر در واکنش‌ها را به حداقل برسان
 
 2. **Accessibility First** - دسترسی‌پذیری در اولویت
-   - WCAG 2.1 AA compliance الزامی است
-   - همیشه از semantic HTML استفاده کن
-   - keyboard navigation و screen reader support اجباری
-   - Color contrast minimums را رعایت کن (4.5:1 for text)
-   - دسترس‌پذیری یک ویژگی اضافی نیست، یک الزام است
+   - دسترس‌پذیری یک ویژگی اضافی نیست، یک الزام است.
+   - جزئیات WCAG 2.1 AA در `knowledge/frontend/ui-ux/accessibility.md`.
 
 3. **Mobile-First** - موبایل در اولویت
-   - طراحی از موبایل شروع شود و به دسکتاپ گسترش یابد
-   - Touch targets حداقل 44×44px
-   - از viewport units و relative units استفاده کن (نه px ثابت)
-   - برای موبایل طراحی کن، سپس برای صفحات بزرگتر
+   - طراحی از موبایل شروع شود و به دسکتاپ گسترش یابد.
+   - جزئیات در `knowledge/frontend/ui-ux/responsive-design.md` و
+     `knowledge/frontend/core/meta-principles.md`.
 
 4. **Performance First** - عملکرد در اولویت
-   - Bundle size: هر route حداکثر 170KB (gzipped)
-   - First Contentful Paint: <1.8s
-   - Time to Interactive: <3.8s
-   - از lazy loading و code splitting استفاده کن
-   - برنامه باید سریع بارگذاری شود و روان اجرا شود
-   - بهینه‌سازی‌ها را بر اساس داده‌های واقعی انجام ده، نه حدس و گمان
-   - محدودیت‌های دستگاه‌های ضعیف‌تر را در نظر بگیر
+   - بهینه‌سازی‌ها را بر اساس داده‌های واقعی انجام ده، نه حدس و گمان.
+   - محدودیت‌های دستگاه‌های ضعیف‌تر را در نظر بگیر.
+   - بودجه bundle در `knowledge/frontend/performance/bundle-size.md`.
+   - متریک‌های Core Web Vitals در `knowledge/frontend/performance/core-web-vitals.md`.
 
 5. **Maintainability** - قابلیت نگهداری
    - کدی بنویس که همکار بعدی بتواند به راحتی آن را درک و تغییر دهد
@@ -61,19 +54,11 @@ kind: rule
 - **همیشه به دسترس‌پذیری (Accessibility) توجه کن** - این یک ویژگی اضافی نیست، یک الزام است
 - **تغییرات تدریجی را به تغییرات بزرگ ترجیح بده** (Incremental Refactoring)
 
-## Performance Budget (بودجه عملکرد)
+## Performance Budget
 
-**الزامات سخت:**
-- Initial JS bundle: **<170KB** (gzipped)
-- Initial CSS: **<50KB** (gzipped)
-- Total page weight: **<1MB**
-- Images: WebP format, lazy-loaded
-- Fonts: <100KB, with font-display: swap
-
-**Core Web Vitals:**
-- **LCP (Largest Contentful Paint):** <2.5s
-- **FID (First Input Delay):** <100ms
-- **CLS (Cumulative Layout Shift):** <0.1
+اعداد بودجه و Core Web Vitals را اینجا تکرار نکن:
+- Bundle: `knowledge/frontend/performance/bundle-size.md`
+- Vitals: `knowledge/frontend/performance/core-web-vitals.md`
 
 ## قوانین تصمیم‌گیری برای AI
 

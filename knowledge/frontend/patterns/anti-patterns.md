@@ -19,11 +19,9 @@ kind: reference
 ## Prop Drilling
 
 ❌ **Bad:** Prop drilling عمیق (>3 سطح)
-- Props را از parent به child به grandchild می‌فرستی
 
-✅ **Good:** استفاده از Pinia store
-- Shared state در store نگه دار
-- مستقیماً در کامپوننت‌ها با store استفاده کن
+✅ **Good:** shared state را در Pinia نگه دار. قانون تصمیم local vs global در
+`knowledge/frontend/state/local-vs-global.md`.
 
 ## Massive Components
 
@@ -47,17 +45,13 @@ kind: reference
 ## No Loading States
 
 ❌ **Bad:** بدون loading indicator
-- کاربر منتظر می‌ماند بدون feedback
 
-✅ **Good:** Loading states
-- Spinner یا skeleton screen
-- Clear feedback
+✅ **Good:** Spinner، skeleton یا toast. الگوها در
+`knowledge/frontend/ui-ux/user-feedback.md`.
 
 ## Global State Abuse
 
-❌ **Bad:** همه چیز در Pinia store
-- UI states که فقط local باید باشند
+❌ **Bad:** همه چیز در Pinia store (از جمله UI state محلی)
 
-✅ **Good:** Local state برای UI
-- Pinia فقط برای shared data
-- ref/reactive در component برای UI-specific state
+✅ **Good:** local state برای UI؛ Pinia فقط برای دادهٔ مشترک. قانون تصمیم در
+`knowledge/frontend/state/local-vs-global.md`.
